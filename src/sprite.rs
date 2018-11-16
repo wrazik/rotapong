@@ -1,6 +1,6 @@
-use commons::{WIDTH, HEIGHT, Center};
+use commons::{WIDTH, HEIGHT, Point};
 pub struct Sprite {
-    pub center: Center,
+    pub center: Point,
     pub velocity: [f64; 2],
     pub speed: f64
 }
@@ -36,4 +36,11 @@ impl Sprite {
             self.center.y = HEIGHT;
         }
     }
+
+    pub fn get_center(&self) -> Point { self.center.clone() }
+    pub fn get_center_tuple(&self) -> (f64, f64) { (self.center.x, self.center.y) }
+    pub fn set_center(&mut self, x: f64, y: f64) {
+        self.center.x = x;
+        self.center.y = y;
+    } 
 }

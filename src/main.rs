@@ -6,8 +6,8 @@ extern crate rand;
 
 use commons::*;
 use sprite::Sprite;
-use pad::Pad;
-use ball::Ball;
+use pad::{Side, make_pad};
+use ball::make_ball;
 use app::App;
 
 use piston::window::WindowSettings;
@@ -50,41 +50,9 @@ fn main() {
         gl: GlGraphics::new(opengl),
         width: WIDTH, 
         height: HEIGHT,
-        left_pad: Pad {
-            sprite: Sprite {
-                center: Center { 
-                    x: 20./2., 
-                    y: HEIGHT/2. - 30.,
-                },
-                velocity: [0., 0.],
-                speed: 3.0
-            },
-            height: 60.,
-            width: 20.
-        },
-        right_pad: Pad {
-            sprite: Sprite {
-                center: Center { 
-                    x: WIDTH-20./2., 
-                    y: HEIGHT/2. - 30.,
-                },
-                velocity: [0., 0.],
-                speed: 3.0
-            },
-            height: 60.,
-            width: 20.
-        },
-        ball: Ball {
-            sprite: Sprite {
-                center: Center { 
-                    x: WIDTH/2.,
-                    y: HEIGHT/2.,
-                },
-                velocity: [x_speed, y_speed],
-                speed: 3.0
-            },
-            radius: 10.0
-        },
+        left_pad: make_pad(Side::LEFT),
+        right_pad: make_pad(Side::RIGHT),
+        ball: make_ball(x_speed, y_speed),
     };
 
     let mut events = Events::new(EventSettings::new());

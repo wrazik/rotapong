@@ -36,17 +36,14 @@ impl App {
         self.right_pad.update();
         self.ball.update();
 
-        let x = self.ball.sprite.center.x;
-        let y = self.ball.sprite.center.y;
+        let (x, y) = self.ball.sprite.get_center_tuple();
         let radius = self.ball.radius;
 
-        let lx = self.left_pad.sprite.center.x;
-        let ly = self.left_pad.sprite.center.y;
+        let (lx, ly) = self.left_pad.sprite.get_center_tuple();
         let lh = self.left_pad.height;
         let lw = self.left_pad.width;
 
-        let rx = self.right_pad.sprite.center.x;
-        let ry = self.right_pad.sprite.center.y;
+        let (rx, ry) = self.right_pad.sprite.get_center_tuple();
         let rh = self.right_pad.height;
         let rw = self.right_pad.width;
         
@@ -68,11 +65,11 @@ impl App {
         }
 
 
-        if self.ball.sprite.center.y < self.ball.radius {
+        if y < self.ball.radius {
             self.ball.bounce_y();
         }
 
-        else if self.ball.sprite.center.y + self.ball.radius > self.height {
+        else if y + self.ball.radius > self.height {
             self.ball.bounce_y();
         }
 

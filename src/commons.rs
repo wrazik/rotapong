@@ -3,7 +3,8 @@ pub const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
 pub const WIDTH: f64 = 640.;
 pub const HEIGHT: f64 = 480.;
 
-pub struct Center {
+#[derive(Clone)]
+pub struct Point {
     pub x: f64,
     pub y: f64
 }
