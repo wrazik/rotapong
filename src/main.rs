@@ -4,63 +4,18 @@ extern crate glutin_window;
 extern crate opengl_graphics;
 extern crate rand;
 
+use commons::*;
+use sprite::Sprite;
+
 use piston::window::WindowSettings;
 use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{ GlGraphics, OpenGL };
-
 use rand::prelude::*;
 
- 
-const WHITE: [f32; 4] = [0.3, 0.3, 1.0, 1.0];
-const BLACK: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
-const WIDTH: f64 = 640.;
-const HEIGHT: f64 = 480.;
-
-pub struct center {
-    x: f64,
-    y: f64
-}
-
-pub struct Sprite {
-    center: center,
-    velocity: [f64; 2],
-    speed: f64
-}
-
-impl Sprite {
-
-    fn up(&mut self) {
-        self.velocity = [0., -self.speed]
-    }
-    fn down(&mut self) {
-        self.velocity = [0., self.speed]
-    }
-    fn stop(&mut self) {
-        self.velocity = [0., 0.]
-    }
-
-    fn update(&mut self) {
-        self.center.x += self.velocity[0];
-
-        if self.center.x < 0. {
-            self.center.x = 0.
-        }
-        else if self.center.x > WIDTH {
-            self.center.x = WIDTH;
-        }
-
-        self.center.y += self.velocity[1];
-        if self.center.y < 0. {
-            self.center.y = 0.
-        }
-
-        else if self.center.y > HEIGHT {
-            self.center.y = HEIGHT;
-        }
-    }
-}
+mod sprite;
+mod commons;
 
 pub struct Pad {
     sprite: Sprite,
@@ -169,7 +124,7 @@ impl App {
     fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
-        self.gl.draw(args.viewport(), |c, gl| {
+        self.gl.draw(args.viewport(), |_c, gl| {
             // Clear the screen.
             clear(BLACK, gl);
         });
@@ -183,7 +138,7 @@ impl App {
         self.ball.reset();
     }
 
-    fn update(&mut self, args: &UpdateArgs) {
+    fn update(&mut self, _args: &UpdateArgs) {
         self.left_pad.update();
         self.right_pad.update();
         self.ball.update();
@@ -202,16 +157,16 @@ impl App {
         let rh = self.right_pad.height;
         let rw = self.right_pad.width;
         
-        if ((x - radius) < (lw + lx)) {
-            if ((y > ly) && (y < (ly + lh))) {
+        if (x - radius) < (lw + lx) {
+            if (y > ly) && (y < (ly + lh)) {
                 self.ball.bounce_x(); 
             }
             else {
                 self.score();
             }
         }
-        else if ((x + radius) > rx) {
-            if ((y > ry) && (y < (ry + rh))) {
+        else if (x + radius) > rx {
+            if (y > ry) && (y < (ry + rh)) {
                 self.ball.bounce_x(); 
             }
             else {
@@ -220,11 +175,11 @@ impl App {
         }
 
 
-        if (self.ball.sprite.center.y < self.ball.radius ) {
+        if self.ball.sprite.center.y < self.ball.radius {
             self.ball.bounce_y();
         }
 
-        else if (self.ball.sprite.center.y + self.ball.radius > self.height) {
+        else if self.ball.sprite.center.y + self.ball.radius > self.height {
             self.ball.bounce_y();
         }
 
@@ -297,11 +252,11 @@ fn main() {
 
     let mut rng = thread_rng();
     let mut x_speed: f64 = rng.gen_range(0.5, 1.5);
-    if (rng.gen_range(0, 10) > 5) {
+    if rng.gen_range(0, 10) > 5 {
         x_speed = -x_speed;
     } 
     let mut y_speed: f64 = rng.gen_range(0.5, 1.);
-    if (rng.gen_range(0, 10) > 5) {
+    if rng.gen_range(0, 10) > 5 {
         y_speed = -y_speed;
     } 
 
@@ -311,7 +266,7 @@ fn main() {
         height: HEIGHT,
         left_pad: Pad {
             sprite: Sprite {
-                center: center { 
+                center: Center { 
                     x: 20./2., 
                     y: HEIGHT/2. - 30.,
                 },
@@ -323,7 +278,7 @@ fn main() {
         },
         right_pad: Pad {
             sprite: Sprite {
-                center: center { 
+                center: Center { 
                     x: WIDTH-20./2., 
                     y: HEIGHT/2. - 30.,
                 },
@@ -335,7 +290,7 @@ fn main() {
         },
         ball: Ball {
             sprite: Sprite {
-                center: center { 
+                center: Center { 
                     x: WIDTH/2.,
                     y: HEIGHT/2.,
                 },
