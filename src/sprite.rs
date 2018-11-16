@@ -44,3 +44,23 @@ impl Sprite {
         self.center.y = y;
     } 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_center_and_get_center_tuple() {
+        let sprite = Sprite {
+                center: Point { 
+                    x: 1.0, 
+                    y: 2.0,
+                },
+                velocity: [0., 0.],
+                speed: 3.0
+            };
+        assert_eq!(sprite.get_center().x, 1.0);
+        assert_eq!(sprite.get_center().y, 2.0);
+        assert_eq!(sprite.get_center_tuple(), (1.0, 2.0));
+    }
+}
