@@ -43,19 +43,23 @@ impl Sprite {
         self.south_east.x += self.velocity[0];
 
         if self.north_west.x < 0. {
-            self.north_west.x = 0.
+            self.north_west.x = 0.;
+            self.south_east.x = self.width;
         }
         else if self.south_east.x > WIDTH {
+            self.north_west.x = WIDTH - self.width;
             self.south_east.x = WIDTH;
         }
 
         self.north_west.y += self.velocity[1];
         self.south_east.y += self.velocity[1];
+        
         if self.north_west.y < 0. {
-            self.north_west.y = 0.
+            self.north_west.y = 0.;
+            self.south_east.y = self.height;
         }
-
         else if self.south_east.y > HEIGHT {
+            self.north_west.y = HEIGHT - self.height;
             self.south_east.y = HEIGHT;
         }
     }
@@ -82,6 +86,14 @@ impl Sprite {
     pub fn mul_velocity(&mut self, x: f64, y: f64) {
         self.velocity[0] *= x;
         self.velocity[1] *= y;
+    }
+    pub fn get_polygon(&self) -> [[f64; 2]; 4] {
+        [
+            [self.north_west.x, self.north_west.y],
+            [self.south_east.x, self.north_west.y],
+            [self.south_east.x, self.south_east.y],
+            [self.north_west.x, self.south_east.y],
+        ]
     }
 }
 

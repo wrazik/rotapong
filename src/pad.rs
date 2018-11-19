@@ -24,8 +24,8 @@ fn make_default_pad_sprite(side: Side) -> Sprite {
         },
         y: HEIGHT/2. - 30.,
     },
-    60.,
     20.,
+    120.,
     3.0,
     [0., 0.])
 }
@@ -42,14 +42,11 @@ impl Pad {
         use graphics::*;
 
         let (x, y) = (0., 0.);
-        let center = self.sprite.get_center();
-
-        let pad: [f64; 4] = [center.x, center.y, self.width, self.height];
 
         gl.draw(args.viewport(), |c, gl| {
             let transform = c.transform.trans(x, y);
 
-            rectangle(WHITE, pad, transform, gl);
+            polygon(WHITE, &self.sprite.get_polygon(), transform, gl);
         });
     }
 
