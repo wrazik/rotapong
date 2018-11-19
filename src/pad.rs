@@ -1,5 +1,5 @@
 use commons::{WHITE, HEIGHT, WIDTH, Point};
-use sprite::Sprite;
+use sprite::{Sprite, make_sprite};
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 
@@ -10,20 +10,24 @@ pub enum Side {
 
 pub fn make_pad(side: Side) -> Pad {
 	Pad {
-            sprite: Sprite {
-                center: Point { 
-                    x: match side {
-                    	Side::LEFT => 20./2.,
-                    	Side::RIGHT => WIDTH-20./2.
-                    }, 
-                    y: HEIGHT/2. - 30.,
-                },
-                velocity: [0., 0.],
-                speed: 3.0
-            },
+            sprite: make_default_pad_sprite(side),
             height: 60.,
             width: 20.
         }
+}
+
+fn make_default_pad_sprite(side: Side) -> Sprite {
+    make_sprite(Point {
+        x: match side {
+        	Side::LEFT => 20./2.,
+        	Side::RIGHT => WIDTH-20./2.
+        },
+        y: HEIGHT/2. - 30.,
+    },
+    60.,
+    20.,
+    3.0,
+    [0., 0.])
 }
 
 pub struct Pad {

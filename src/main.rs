@@ -5,7 +5,6 @@ extern crate opengl_graphics;
 extern crate rand;
 
 use commons::*;
-use sprite::Sprite;
 use pad::{Side, make_pad};
 use ball::make_ball;
 use app::App;
