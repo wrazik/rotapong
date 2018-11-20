@@ -50,11 +50,11 @@ impl Ball {
     }
 
     pub fn bounce_x(&mut self) {
-        self.sprite.mul_velocity(-1.0, 1.0);
+        self.sprite.mul_velocity(-2.0, 2.0);
     }
 
     pub fn bounce_y(&mut self) {
-        self.sprite.mul_velocity(1.0, -1.1);
+        self.sprite.mul_velocity(1.0, -1.0);
     }
 
     pub fn update(&mut self) {
