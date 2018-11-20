@@ -45,8 +45,12 @@ impl App {
 
         let (rx, ry) = self.right_pad.sprite.get_center_tuple();
         let rh = self.right_pad.height;
-        let rw = self.right_pad.width;
-        
+        // let rw = self.right_pad.width;
+        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite)  {
+        	self.ball.bounce_x();
+        } else if self.ball.sprite.is_colliding_with(&self.right_pad.sprite) {
+        	self.ball.bounce_x();
+        }
         if (x - radius) < (lw + lx) {
             if (y > ly) && (y < (ly + lh)) {
                 self.ball.bounce_x(); 

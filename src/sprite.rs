@@ -95,11 +95,79 @@ impl Sprite {
             [self.north_west.x, self.south_east.y],
         ]
     }
+
+    fn is_vertically_colliding_with(&self, other: &Sprite) -> bool {
+        (self.north_west.y < other.south_east.y && self.south_east.y > other.south_east.y) ||
+            (self.north_west.y < other.north_west.y && self.south_east.y > other.north_west.y)
+    }
+
+    fn is_horizontally_colliding_with(&self, other: &Sprite) -> bool {
+        (self.north_west.x < other.south_east.x && self.south_east.x > other.south_east.x) ||
+            (self.north_west.x < other.north_west.x && self.south_east.x > other.north_west.x)
+    }
+
+    pub fn is_colliding_with(&self, other: &Sprite) -> bool {
+        (self.is_vertically_colliding_with(other) && self.is_horizontally_colliding_with(other)) || 
+            (other.is_vertically_colliding_with(self) && other.is_horizontally_colliding_with(self))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn make_test_sprite(nw: [f64; 2], se: [f64; 2]) -> Sprite {
+        Sprite {
+        north_west: Point {
+            x: nw[0],
+            y: nw[1]
+        },
+        south_east: Point {
+            x: se[0],
+            y: se[1]
+        },
+        width: 0.0,
+        height: 0.0,
+        velocity: [0.0, 0.0],
+        speed: 0.0
+    }
+    }
+
+    mod collision_detection {
+        use sprite::tests::make_test_sprite;
+
+        #[test]
+        fn one_corner() {
+            let colliding1 = make_test_sprite([0., 0.], [1., 1.]);
+            let colliding2 = make_test_sprite([0.5, 0.5], [2., 2.]);
+            assert!(colliding1.is_colliding_with(&colliding2));
+            assert!(colliding2.is_colliding_with(&colliding1));
+        }
+
+        #[test]
+        fn whole_side_y() {
+            let colliding1 = make_test_sprite([0., 0.], [3., 3.]);
+            let colliding2 = make_test_sprite([0.5, 0.5], [2., 5.]);
+            assert!(colliding1.is_colliding_with(&colliding2));
+            assert!(colliding2.is_colliding_with(&colliding1));
+        }
+
+        #[test]
+        fn whole_side_x() {
+            let colliding1 = make_test_sprite([0., 0.], [3., 3.]);
+            let colliding2 = make_test_sprite([0.5, 0.5], [5., 2.]);
+            assert!(colliding1.is_colliding_with(&colliding2));
+            assert!(colliding2.is_colliding_with(&colliding1));
+        }
+
+        #[test]
+        fn inside() {
+            let colliding1 = make_test_sprite([0., 0.], [3., 3.]);
+            let colliding2 = make_test_sprite([0.5, 0.5], [2., 2.]);
+            assert!(colliding1.is_colliding_with(&colliding2));
+            assert!(colliding2.is_colliding_with(&colliding1));
+        }
+    }
 
     #[test]
     fn get_center_and_get_center_tuple() {
