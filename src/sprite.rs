@@ -72,17 +72,9 @@ impl Sprite {
     pub fn get_center_tuple(&self) -> (f64, f64) { (
             (self.north_west.x + self.south_east.x) / 2.0,
             (self.north_west.y + self.south_east.y) / 2.0
-        ) }
-    pub fn set_center(&mut self, x: f64, y: f64) {
-        self.north_west = Point {
-            x: x - self.width/2.0,
-            y: y - self.height/2.0
-        };
-        self.south_east = Point {
-            x: x + self.width/2.0,
-            y: y + self.height/2.0
-        };
+        )
     }
+
     pub fn mul_velocity(&mut self, x: f64, y: f64) {
         self.velocity[0] *= x;
         self.velocity[1] *= y;
@@ -109,6 +101,14 @@ impl Sprite {
     pub fn is_colliding_with(&self, other: &Sprite) -> bool {
         (self.is_vertically_colliding_with(other) && self.is_horizontally_colliding_with(other)) || 
             (other.is_vertically_colliding_with(self) && other.is_horizontally_colliding_with(self))
+    }
+
+    pub fn is_x_inside_of_play_area(&self) -> bool {
+        (self.north_west.x > 0. && self.south_east.x < WIDTH)
+    }
+
+    pub fn is_y_inside_of_play_area(&self) -> bool {
+        (self.north_west.y > 0. && self.south_east.y < HEIGHT)
     }
 }
 

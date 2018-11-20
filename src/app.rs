@@ -36,47 +36,19 @@ impl App {
         self.right_pad.update();
         self.ball.update();
 
-        let (x, y) = self.ball.sprite.get_center_tuple();
-        let radius = self.ball.radius;
+        if !self.ball.sprite.is_x_inside_of_play_area() {
+        	self.score();
+        	return;
+        }
 
-        let (lx, ly) = self.left_pad.sprite.get_center_tuple();
-        let lh = self.left_pad.height;
-        let lw = self.left_pad.width;
-
-        let (rx, ry) = self.right_pad.sprite.get_center_tuple();
-        let rh = self.right_pad.height;
-        // let rw = self.right_pad.width;
-        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite)  {
-        	self.ball.bounce_x();
-        } else if self.ball.sprite.is_colliding_with(&self.right_pad.sprite) {
+        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite) ||
+        	self.ball.sprite.is_colliding_with(&self.right_pad.sprite) {
         	self.ball.bounce_x();
         }
-        if (x - radius) < (lw + lx) {
-            if (y > ly) && (y < (ly + lh)) {
-                self.ball.bounce_x(); 
-            }
-            else {
-                self.score();
-            }
-        }
-        else if (x + radius) > rx {
-            if (y > ry) && (y < (ry + rh)) {
-                self.ball.bounce_x(); 
-            }
-            else {
-                self.score();
-            }
-        }
 
-
-        if y < self.ball.radius {
-            self.ball.bounce_y();
+        if !self.ball.sprite.is_y_inside_of_play_area() {
+        	self.ball.bounce_y();
         }
-
-        else if y + self.ball.radius > self.height {
-            self.ball.bounce_y();
-        }
-
     }
 
     pub fn reset(&mut self) {

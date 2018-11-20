@@ -1,12 +1,7 @@
-use commons::{WHITE, HEIGHT, WIDTH, Point};
+use commons::{WHITE, HEIGHT, WIDTH, Point, Side};
 use sprite::{Sprite, make_sprite};
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
-
-pub enum Side {
-	LEFT,
-	RIGHT
-}
 
 pub fn make_pad(side: Side) -> Pad {
 	Pad {
