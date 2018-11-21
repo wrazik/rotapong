@@ -1,15 +1,8 @@
-use commons::{Point, Side, HEIGHT, WHITE, WIDTH};
+use commons::{Point, Side, HEIGHT, WIDTH};
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 use sprite::{make_sprite, Sprite};
-
-pub fn make_pad(side: Side) -> Pad {
-    Pad {
-        sprite: make_default_pad_sprite(side),
-        height: 60.,
-        width: 20.,
-    }
-}
+use color::*;
 
 fn make_default_pad_sprite(side: Side) -> Sprite {
     make_sprite(
@@ -31,9 +24,19 @@ pub struct Pad {
     pub sprite: Sprite,
     pub height: f64,
     pub width: f64,
+    color: Color
 }
 
 impl Pad {
+    pub fn new(side: Side) -> Pad {
+        Pad {
+            sprite: make_default_pad_sprite(side),
+            height: 60.,
+            width: 20.,
+            color: Color::new(DefinedColors::RED)
+        }
+    }
+
     pub fn draw(&mut self, gl: &mut GlGraphics, args: &RenderArgs) {
         use graphics::*;
 
@@ -42,7 +45,7 @@ impl Pad {
         gl.draw(args.viewport(), |c, gl| {
             let transform = c.transform.trans(x, y);
 
-            polygon(WHITE, &self.sprite.get_polygon(), transform, gl);
+            polygon(self.color.to_rgb(), &self.sprite.get_polygon(), transform, gl);
         });
     }
 
@@ -60,5 +63,6 @@ impl Pad {
 
     pub fn update(&mut self) {
         self.sprite.update();
+        self.color.increment_hue();
     }
 }

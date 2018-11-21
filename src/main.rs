@@ -5,9 +5,6 @@ extern crate piston;
 extern crate rand;
 
 use app::App;
-use ball::make_ball;
-use commons::*;
-use pad::make_pad;
 
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -15,12 +12,14 @@ use piston::event_loop::*;
 use piston::input::*;
 use piston::window::WindowSettings;
 use rand::prelude::*;
+use commons::*;
 
 mod app;
 mod ball;
 mod commons;
 mod pad;
 mod sprite;
+mod color;
 
 fn main() {
     let opengl = OpenGL::V3_2;
@@ -42,14 +41,7 @@ fn main() {
         y_speed = -y_speed;
     }
 
-    let mut app = App {
-        gl: GlGraphics::new(opengl),
-        width: WIDTH,
-        height: HEIGHT,
-        left_pad: make_pad(Side::LEFT),
-        right_pad: make_pad(Side::RIGHT),
-        ball: make_ball(x_speed, y_speed),
-    };
+    let mut app = App::new(GlGraphics::new(opengl), x_speed, y_speed);
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {

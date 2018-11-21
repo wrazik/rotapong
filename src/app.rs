@@ -1,25 +1,37 @@
+use color::*;
 use ball::Ball;
-use commons::BLACK;
 use opengl_graphics::GlGraphics;
 use pad::Pad;
 use piston::input::{Button, Key, RenderArgs, UpdateArgs};
+use commons::*;
 
 pub struct App {
-    pub gl: GlGraphics, // OpenGL drawing backend.
-    pub left_pad: Pad,
-    pub right_pad: Pad,
-    pub ball: Ball,
-    pub width: f64,
-    pub height: f64,
+    gl: GlGraphics, // OpenGL drawing backend.
+    left_pad: Pad,
+    right_pad: Pad,
+    ball: Ball,
+    background_color: Color
 }
 
 impl App {
+    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64) -> App {
+        App {
+            gl: gl,
+            left_pad: Pad::new(Side::LEFT),
+            right_pad: Pad::new(Side::RIGHT),
+            ball: Ball::new(x_speed, y_speed),
+            background_color: Color::new(DefinedColors::CYAN)
+        }
+    }
+
     pub fn render(&mut self, args: &RenderArgs) {
         use graphics::*;
 
+        let current_color = self.background_color.to_rgb();
+
         self.gl.draw(args.viewport(), |_c, gl| {
             // Clear the screen.
-            clear(BLACK, gl);
+            clear(current_color, gl);
         });
 
         self.left_pad.draw(&mut self.gl, args);
@@ -35,6 +47,7 @@ impl App {
         self.left_pad.update();
         self.right_pad.update();
         self.ball.update();
+        self.background_color.increment_hue();
 
         if !self.ball.sprite.is_x_inside_of_play_area() {
             self.score();

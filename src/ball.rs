@@ -1,19 +1,13 @@
 extern crate graphics;
 
-use commons::{Point, HEIGHT, WHITE, WIDTH};
+use color::*;
+use commons::{Point, HEIGHT, WIDTH};
 use graphics::*;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 use rand::thread_rng;
 use rand::Rng;
 use sprite::{make_sprite, Sprite};
-
-pub fn make_ball(x_speed: f64, y_speed: f64) -> Ball {
-    Ball {
-        sprite: make_default_ball_sprite(x_speed, y_speed),
-        radius: 10.0,
-    }
-}
 
 fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
     make_sprite(
@@ -31,17 +25,26 @@ fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
 pub struct Ball {
     pub sprite: Sprite,
     pub radius: f64,
+    color: Color
 }
 
 impl Ball {
-    pub fn draw(&mut self, gl: &mut GlGraphics, args: &RenderArgs) {
+    pub fn new(x_speed: f64, y_speed: f64) -> Ball {
+        Ball {
+            sprite: make_default_ball_sprite(x_speed, y_speed),
+            radius: 10.0,
+            color: Color::new(DefinedColors::RED)
+        }
+    }
+
+    pub fn draw(&self, gl: &mut GlGraphics, args: &RenderArgs) {
         let center = self.sprite.get_center();
 
         gl.draw(args.viewport(), |c, gl| {
             let transform = c.transform.trans(center.x, center.y);
 
             ellipse(
-                WHITE,
+                self.color.to_rgb(),
                 graphics::ellipse::circle(0., 0., self.radius),
                 transform,
                 gl,
@@ -59,10 +62,10 @@ impl Ball {
 
     pub fn update(&mut self) {
         self.sprite.update();
+        self.color.increment_hue();
     }
 
     pub fn reset(&mut self) {
-        // self.sprite.set_center(400., 300.);
         let mut rng = thread_rng();
         let mut x_speed: f64 = rng.gen_range(0.5, 1.5);
         let mut y_speed: f64 = rng.gen_range(0.8, 1.3);
@@ -73,7 +76,5 @@ impl Ball {
             y_speed = -y_speed;
         }
         self.sprite = make_default_ball_sprite(x_speed, y_speed);
-        // self.sprite.velocity[0] = x_speed;
-        // self.sprite.velocity[1] = y_speed;
     }
 }
