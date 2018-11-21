@@ -1,16 +1,16 @@
-use pad::Pad;
 use ball::Ball;
 use commons::BLACK;
 use opengl_graphics::GlGraphics;
-use piston::input::{ UpdateArgs, RenderArgs, Button, Key };
+use pad::Pad;
+use piston::input::{Button, Key, RenderArgs, UpdateArgs};
 
 pub struct App {
     pub gl: GlGraphics, // OpenGL drawing backend.
-    pub left_pad: Pad,  
-    pub right_pad: Pad,  
-    pub ball: Ball,  
+    pub left_pad: Pad,
+    pub right_pad: Pad,
+    pub ball: Ball,
     pub width: f64,
-    pub height: f64
+    pub height: f64,
 }
 
 impl App {
@@ -37,17 +37,18 @@ impl App {
         self.ball.update();
 
         if !self.ball.sprite.is_x_inside_of_play_area() {
-        	self.score();
-        	return;
+            self.score();
+            return;
         }
 
-        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite) ||
-        	self.ball.sprite.is_colliding_with(&self.right_pad.sprite) {
-        	self.ball.bounce_x();
+        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite)
+            || self.ball.sprite.is_colliding_with(&self.right_pad.sprite)
+        {
+            self.ball.bounce_x();
         }
 
         if !self.ball.sprite.is_y_inside_of_play_area() {
-        	self.ball.bounce_y();
+            self.ball.bounce_y();
         }
     }
 
@@ -57,23 +58,21 @@ impl App {
 
     pub fn release(&mut self, key: &Button) {
         match key {
-            Button::Keyboard(k) => {
-                match k {
-                    Key::W =>  {
-                        self.left_pad.stop();
-                    },
-                    Key::S => { 
-                        self.left_pad.stop();
-                    },
-                    Key::Up =>  {
-                        self.right_pad.stop();
-                    },
-                    Key::Down => { 
-                        self.right_pad.stop();
-                    },
-                    _ => {} 
+            Button::Keyboard(k) => match k {
+                Key::W => {
+                    self.left_pad.stop();
                 }
-            }
+                Key::S => {
+                    self.left_pad.stop();
+                }
+                Key::Up => {
+                    self.right_pad.stop();
+                }
+                Key::Down => {
+                    self.right_pad.stop();
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -81,23 +80,21 @@ impl App {
     pub fn key_pressed(&mut self, key: &Button) {
         // Rotate 2 radians per second.
         match key {
-            Button::Keyboard(k) => {
-                match k {
-                    Key::W =>  {
-                        self.left_pad.up();
-                    },
-                    Key::S => { 
-                        self.left_pad.down();
-                    },
-                    Key::Up =>  {
-                        self.right_pad.up();
-                    },
-                    Key::Down => { 
-                        self.right_pad.down();
-                    },
-                    _ => {} 
+            Button::Keyboard(k) => match k {
+                Key::W => {
+                    self.left_pad.up();
                 }
-            }
+                Key::S => {
+                    self.left_pad.down();
+                }
+                Key::Up => {
+                    self.right_pad.up();
+                }
+                Key::Down => {
+                    self.right_pad.down();
+                }
+                _ => {}
+            },
             _ => {}
         }
     }

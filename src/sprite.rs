@@ -1,19 +1,25 @@
-use commons::{WIDTH, HEIGHT, Point};
+use commons::{Point, HEIGHT, WIDTH};
 
-pub fn make_sprite(center: Point, width: f64, height: f64, speed: f64, velocity: [f64; 2]) -> Sprite {
+pub fn make_sprite(
+    center: Point,
+    width: f64,
+    height: f64,
+    speed: f64,
+    velocity: [f64; 2],
+) -> Sprite {
     Sprite {
         north_west: Point {
-            x: center.x - width/2.0,
-            y: center.y - height/2.0
+            x: center.x - width / 2.0,
+            y: center.y - height / 2.0,
         },
         south_east: Point {
-            x: center.x + width/2.0,
-            y: center.y + height/2.0
+            x: center.x + width / 2.0,
+            y: center.y + height / 2.0,
         },
         width: width,
         height: height,
         velocity: velocity,
-        speed: speed
+        speed: speed,
     }
 }
 
@@ -23,11 +29,10 @@ pub struct Sprite {
     width: f64,
     height: f64,
     velocity: [f64; 2],
-    speed: f64
+    speed: f64,
 }
 
 impl Sprite {
-
     pub fn up(&mut self) {
         self.velocity = [0., -self.speed]
     }
@@ -45,20 +50,18 @@ impl Sprite {
         if self.north_west.x < 0. {
             self.north_west.x = 0.;
             self.south_east.x = self.width;
-        }
-        else if self.south_east.x > WIDTH {
+        } else if self.south_east.x > WIDTH {
             self.north_west.x = WIDTH - self.width;
             self.south_east.x = WIDTH;
         }
 
         self.north_west.y += self.velocity[1];
         self.south_east.y += self.velocity[1];
-        
+
         if self.north_west.y < 0. {
             self.north_west.y = 0.;
             self.south_east.y = self.height;
-        }
-        else if self.south_east.y > HEIGHT {
+        } else if self.south_east.y > HEIGHT {
             self.north_west.y = HEIGHT - self.height;
             self.south_east.y = HEIGHT;
         }
@@ -68,10 +71,12 @@ impl Sprite {
         Point {
             x: (self.north_west.x + self.south_east.x) / 2.0,
             y: (self.north_west.y + self.south_east.y) / 2.0,
-        }}
-    pub fn get_center_tuple(&self) -> (f64, f64) { (
+        }
+    }
+    pub fn get_center_tuple(&self) -> (f64, f64) {
+        (
             (self.north_west.x + self.south_east.x) / 2.0,
-            (self.north_west.y + self.south_east.y) / 2.0
+            (self.north_west.y + self.south_east.y) / 2.0,
         )
     }
 
@@ -89,18 +94,19 @@ impl Sprite {
     }
 
     fn is_vertically_colliding_with(&self, other: &Sprite) -> bool {
-        (self.north_west.y < other.south_east.y && self.south_east.y > other.south_east.y) ||
-            (self.north_west.y < other.north_west.y && self.south_east.y > other.north_west.y)
+        (self.north_west.y < other.south_east.y && self.south_east.y > other.south_east.y)
+            || (self.north_west.y < other.north_west.y && self.south_east.y > other.north_west.y)
     }
 
     fn is_horizontally_colliding_with(&self, other: &Sprite) -> bool {
-        (self.north_west.x < other.south_east.x && self.south_east.x > other.south_east.x) ||
-            (self.north_west.x < other.north_west.x && self.south_east.x > other.north_west.x)
+        (self.north_west.x < other.south_east.x && self.south_east.x > other.south_east.x)
+            || (self.north_west.x < other.north_west.x && self.south_east.x > other.north_west.x)
     }
 
     pub fn is_colliding_with(&self, other: &Sprite) -> bool {
-        (self.is_vertically_colliding_with(other) && self.is_horizontally_colliding_with(other)) || 
-            (other.is_vertically_colliding_with(self) && other.is_horizontally_colliding_with(self))
+        (self.is_vertically_colliding_with(other) && self.is_horizontally_colliding_with(other))
+            || (other.is_vertically_colliding_with(self)
+                && other.is_horizontally_colliding_with(self))
     }
 
     pub fn is_x_inside_of_play_area(&self) -> bool {
@@ -118,19 +124,13 @@ mod tests {
 
     fn make_test_sprite(nw: [f64; 2], se: [f64; 2]) -> Sprite {
         Sprite {
-        north_west: Point {
-            x: nw[0],
-            y: nw[1]
-        },
-        south_east: Point {
-            x: se[0],
-            y: se[1]
-        },
-        width: 0.0,
-        height: 0.0,
-        velocity: [0.0, 0.0],
-        speed: 0.0
-    }
+            north_west: Point { x: nw[0], y: nw[1] },
+            south_east: Point { x: se[0], y: se[1] },
+            width: 0.0,
+            height: 0.0,
+            velocity: [0.0, 0.0],
+            speed: 0.0,
+        }
     }
 
     mod collision_detection {
@@ -171,10 +171,7 @@ mod tests {
 
     #[test]
     fn get_center_and_get_center_tuple() {
-        let sprite = make_sprite(Point { 
-                    x: 1.0, 
-                    y: 2.0,
-                }, 4.0, 2.0, 3.0, [0., 0.]);
+        let sprite = make_sprite(Point { x: 1.0, y: 2.0 }, 4.0, 2.0, 3.0, [0., 0.]);
         assert_eq!(sprite.get_center().x, 1.0);
         assert_eq!(sprite.get_center().y, 2.0);
         assert_eq!(sprite.get_center_tuple(), (1.0, 2.0));
