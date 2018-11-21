@@ -3,9 +3,6 @@ name = "race_ml"
 version = "0.1.0"
 authors = ["wrazik <wojciech.razik@gmail.com>"]
 
-[[bin]]
-name = "spinning-square"
-
 [dependencies]
 rand = "0.5.5"
 piston = "0.37.0"
