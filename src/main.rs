@@ -5,6 +5,7 @@ extern crate piston;
 extern crate rand;
 extern crate clap;
 
+use piston::window::AdvancedWindow;
 use app::App;
 
 use glutin_window::GlutinWindow as Window;
@@ -67,6 +68,7 @@ fn main() {
         }
         if let Some(u) = e.update_args() {
             app.update(&u);
+            window.set_title(app.get_title());
         }
     }
 }

@@ -1,13 +1,27 @@
-use commons::{Point, HEIGHT, WIDTH};
+use commons::{Point, HEIGHT, WIDTH, Side};
 
-pub fn make_sprite(
-    center: Point,
+pub enum HorizontalSpritePosition {
+    Inside,
+    Outside(Side)
+}
+
+pub struct Sprite {
+    upper_left: Point,
+    lower_right: Point,
     width: f64,
     height: f64,
-    speed: f64,
     velocity: [f64; 2],
-) -> Sprite {
-    Sprite {
+    speed: f64,
+}
+
+impl Sprite {
+    pub fn new(
+        center: Point,
+        width: f64,
+        height: f64,
+        speed: f64,
+        velocity: [f64; 2]) -> Sprite {
+            Sprite {
         upper_left: Point {
             x: center.x - width / 2.0,
             y: center.y - height / 2.0,
@@ -21,18 +35,7 @@ pub fn make_sprite(
         velocity: velocity,
         speed: speed,
     }
-}
-
-pub struct Sprite {
-    upper_left: Point,
-    lower_right: Point,
-    width: f64,
-    height: f64,
-    velocity: [f64; 2],
-    speed: f64,
-}
-
-impl Sprite {
+    }
     pub fn up(&mut self) {
         self.velocity = [0., -self.speed]
     }
@@ -109,8 +112,10 @@ impl Sprite {
                 && other.is_horizontally_colliding_with(self))
     }
 
-    pub fn is_x_inside_of_play_area(&self) -> bool {
-        (self.upper_left.x > 0. && self.lower_right.x < WIDTH)
+    pub fn is_x_inside_of_play_area(&self) -> HorizontalSpritePosition {
+        if self.upper_left.x <= 0. { return HorizontalSpritePosition::Outside(Side::LEFT); }
+        else if self.lower_right.x >= WIDTH { return HorizontalSpritePosition::Outside(Side::RIGHT); }
+        else { HorizontalSpritePosition::Inside }
     }
 
     pub fn is_y_inside_of_play_area(&self) -> bool {

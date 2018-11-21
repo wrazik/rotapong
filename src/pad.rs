@@ -2,11 +2,11 @@ use game_object::GameObject;
 use commons::{Point, Side, HEIGHT, WIDTH};
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
-use sprite::{make_sprite, Sprite};
+use sprite::{Sprite};
 use color::*;
 
 fn make_default_pad_sprite(side: Side) -> Sprite {
-    make_sprite(
+    Sprite::new(
         Point {
             x: match side {
                 Side::LEFT => 20. / 2.,
