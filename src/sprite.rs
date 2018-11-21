@@ -80,9 +80,9 @@ impl Sprite {
         )
     }
 
-    pub fn mul_velocity(&mut self, x: f64, y: f64) {
-        self.velocity[0] *= x;
-        self.velocity[1] *= y;
+    pub fn mul_velocity(&mut self, multiplier: [f64; 2]) {
+        self.velocity[0] *= multiplier[0];
+        self.velocity[1] *= multiplier[1];
     }
     pub fn get_polygon(&self) -> [[f64; 2]; 4] {
         [

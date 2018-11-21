@@ -4,23 +4,38 @@ use opengl_graphics::GlGraphics;
 use pad::Pad;
 use piston::input::{Button, Key, RenderArgs, UpdateArgs};
 use commons::*;
+use game_object::GameObject;
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
     left_pad: Pad,
     right_pad: Pad,
     ball: Ball,
-    background_color: Color
+    background_color: Color,
+    update_hook: Box<fn(&mut Color)>
+}
+
+fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)>{
+    if is_colorful {    
+        Box::new(|color| {
+            color.increment_hue();
+        })
+    }
+    else {
+        Box::new(|_| {})
+    }
 }
 
 impl App {
-    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64) -> App {
+    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64, is_colorful: bool, it_gets_faster: bool) -> App {
+        let velocity = if it_gets_faster {[[-2.0, 2.0], [1., -1.]]} else {[[-1.0, 1.0], [1.0, -1.1]]};
         App {
             gl: gl,
-            left_pad: Pad::new(Side::LEFT),
-            right_pad: Pad::new(Side::RIGHT),
-            ball: Ball::new(x_speed, y_speed),
-            background_color: Color::new(DefinedColors::CYAN)
+            left_pad: Pad::new(Side::LEFT, make_update_hook(is_colorful)),
+            right_pad: Pad::new(Side::RIGHT, make_update_hook(is_colorful)),
+            ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
+            background_color: Color::new(DefinedColors::CYAN),
+            update_hook: make_update_hook(is_colorful)
         }
     }
 
@@ -47,7 +62,7 @@ impl App {
         self.left_pad.update();
         self.right_pad.update();
         self.ball.update();
-        self.background_color.increment_hue();
+        (self.update_hook)(&mut self.background_color);
 
         if !self.ball.sprite.is_x_inside_of_play_area() {
             self.score();

@@ -8,6 +8,7 @@ use piston::input::RenderArgs;
 use rand::thread_rng;
 use rand::Rng;
 use sprite::{make_sprite, Sprite};
+use game_object::GameObject;
 
 fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
     make_sprite(
@@ -25,19 +26,13 @@ fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
 pub struct Ball {
     pub sprite: Sprite,
     pub radius: f64,
-    color: Color
+    color: Color,
+    update_hook: Box<fn(&mut Color)>,
+    velocity: [[f64; 2]; 2]
 }
 
-impl Ball {
-    pub fn new(x_speed: f64, y_speed: f64) -> Ball {
-        Ball {
-            sprite: make_default_ball_sprite(x_speed, y_speed),
-            radius: 10.0,
-            color: Color::new(DefinedColors::RED)
-        }
-    }
-
-    pub fn draw(&self, gl: &mut GlGraphics, args: &RenderArgs) {
+impl GameObject for Ball {
+    fn draw(&self, gl: &mut GlGraphics, args: &RenderArgs) {
         let center = self.sprite.get_center();
 
         gl.draw(args.viewport(), |c, gl| {
@@ -52,20 +47,7 @@ impl Ball {
         });
     }
 
-    pub fn bounce_x(&mut self) {
-        self.sprite.mul_velocity(-2.0, 2.0);
-    }
-
-    pub fn bounce_y(&mut self) {
-        self.sprite.mul_velocity(1.0, -1.0);
-    }
-
-    pub fn update(&mut self) {
-        self.sprite.update();
-        self.color.increment_hue();
-    }
-
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         let mut rng = thread_rng();
         let mut x_speed: f64 = rng.gen_range(0.5, 1.5);
         let mut y_speed: f64 = rng.gen_range(0.8, 1.3);
@@ -76,5 +58,30 @@ impl Ball {
             y_speed = -y_speed;
         }
         self.sprite = make_default_ball_sprite(x_speed, y_speed);
+    }
+
+    fn update(&mut self) {
+        (self.update_hook)(&mut self.color);
+        self.sprite.update();
+    }
+}
+
+impl Ball {
+    pub fn new(x_speed: f64, y_speed: f64, velocity: [[f64; 2]; 2], update_hook: Box<fn (&mut Color)>) -> Ball {
+        Ball {
+            sprite: make_default_ball_sprite(x_speed, y_speed),
+            radius: 10.0,
+            color: Color::new(DefinedColors::RED),
+            update_hook: update_hook,
+            velocity: velocity
+        }
+    }
+
+    pub fn bounce_x(&mut self) {
+        self.sprite.mul_velocity(self.velocity[0]);
+    }
+
+    pub fn bounce_y(&mut self) {
+        self.sprite.mul_velocity(self.velocity[1]);
     }
 }
