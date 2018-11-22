@@ -1,18 +1,22 @@
-use game_object::GameObject;
+use color::*;
 use commons::{Point, Side, HEIGHT, WIDTH};
+use game_object::GameObject;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
-use sprite::{Sprite};
-use color::*;
+use sprite::Sprite;
 
 fn make_default_pad_sprite(side: Side) -> Sprite {
+    let pad_position = [
+        match side {
+            Side::LEFT => 20. / 2.,
+            Side::RIGHT => WIDTH as f64 - 20. / 2.,
+        },
+        (HEIGHT as f64 / 2. - 30.),
+    ];
     Sprite::new(
         Point {
-            x: match side {
-                Side::LEFT => 20. / 2.,
-                Side::RIGHT => WIDTH - 20. / 2.,
-            },
-            y: HEIGHT / 2. - 30.,
+            x: pad_position[0],
+            y: pad_position[1],
         },
         20.,
         120.,
@@ -26,7 +30,7 @@ pub struct Pad {
     pub height: f64,
     pub width: f64,
     color: Color,
-    update_hook: Box<fn(&mut Color)>
+    update_hook: Box<fn(&mut Color)>,
 }
 
 impl GameObject for Pad {
@@ -38,7 +42,12 @@ impl GameObject for Pad {
         gl.draw(args.viewport(), |c, gl| {
             let transform = c.transform.trans(x, y);
 
-            polygon(self.color.to_rgb(), &self.sprite.get_polygon(), transform, gl);
+            polygon(
+                self.color.to_rgb(),
+                &self.sprite.get_polygon(),
+                transform,
+                gl,
+            );
         });
     }
 
@@ -57,7 +66,7 @@ impl Pad {
             height: 60.,
             width: 20.,
             color: Color::new(DefinedColors::RED),
-            update_hook: update_hook
+            update_hook: update_hook,
         }
     }
 

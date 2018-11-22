@@ -2,19 +2,20 @@ extern crate graphics;
 
 use color::*;
 use commons::{Point, HEIGHT, WIDTH};
+use game_object::GameObject;
 use graphics::*;
 use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 use rand::thread_rng;
 use rand::Rng;
 use sprite::Sprite;
-use game_object::GameObject;
 
 fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
+    let center_of_screen = [(WIDTH as f64 / 2.), (HEIGHT as f64 / 2.)];
     Sprite::new(
         Point {
-            x: WIDTH / 2.,
-            y: HEIGHT / 2.,
+            x: center_of_screen[0],
+            y: center_of_screen[1],
         },
         10.0,
         10.0,
@@ -28,7 +29,7 @@ pub struct Ball {
     pub radius: f64,
     color: Color,
     update_hook: Box<fn(&mut Color)>,
-    velocity: [[f64; 2]; 2]
+    velocity: [[f64; 2]; 2],
 }
 
 impl GameObject for Ball {
@@ -67,13 +68,18 @@ impl GameObject for Ball {
 }
 
 impl Ball {
-    pub fn new(x_speed: f64, y_speed: f64, velocity: [[f64; 2]; 2], update_hook: Box<fn (&mut Color)>) -> Ball {
+    pub fn new(
+        x_speed: f64,
+        y_speed: f64,
+        velocity: [[f64; 2]; 2],
+        update_hook: Box<fn(&mut Color)>,
+    ) -> Ball {
         Ball {
             sprite: make_default_ball_sprite(x_speed, y_speed),
             radius: 10.0,
             color: Color::new(DefinedColors::RED),
             update_hook: update_hook,
-            velocity: velocity
+            velocity: velocity,
         }
     }
 

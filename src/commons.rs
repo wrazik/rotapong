@@ -1,5 +1,7 @@
-pub const WIDTH: f64 = 640.;
-pub const HEIGHT: f64 = 480.;
+pub const WIDTH: u32 = 640;
+pub const HEIGHT: u32 = 480;
+pub const VERTICAL_MARGIN: u32 = 100;
+pub const HORIZONTAL_MARGIN: u32 = 150;
 
 pub enum Side {
     LEFT,
