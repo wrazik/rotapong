@@ -177,8 +177,11 @@ mod tests {
     #[test]
     fn get_center_and_get_center_tuple() {
         let sprite = Sprite::new(Point { x: 1.0, y: 2.0 }, 4.0, 2.0, 3.0, [0., 0.]);
-        assert_eq!(sprite.get_center().x, 1.0);
-        assert_eq!(sprite.get_center().y, 2.0);
-        assert_eq!(sprite.get_center_tuple(), (1.0, 2.0));
+        assert_eq!(sprite.get_center().x, transform_x(1.0));
+        assert_eq!(sprite.get_center().y, transform_y(2.0));
+        assert_eq!(
+            sprite.get_center_tuple(),
+            (transform_x(1.0), transform_y(2.0))
+        );
     }
 }
