@@ -5,6 +5,7 @@ use pad::Pad;
 use piston::input::{Button, Key, RenderArgs, UpdateArgs};
 use commons::*;
 use game_object::GameObject;
+use sprite::HorizontalSpritePosition;
 
 pub struct App {
     gl: GlGraphics, // OpenGL drawing backend.
@@ -12,7 +13,8 @@ pub struct App {
     right_pad: Pad,
     ball: Ball,
     background_color: Color,
-    update_hook: Box<fn(&mut Color)>
+    update_hook: Box<fn(&mut Color)>,
+    scoreboard: [u32; 2]
 }
 
 fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)>{
@@ -35,7 +37,8 @@ impl App {
             right_pad: Pad::new(Side::RIGHT, make_update_hook(is_colorful)),
             ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
             background_color: Color::new(DefinedColors::CYAN),
-            update_hook: make_update_hook(is_colorful)
+            update_hook: make_update_hook(is_colorful),
+            scoreboard: [0, 0]
         }
     }
 
@@ -54,7 +57,11 @@ impl App {
         self.ball.draw(&mut self.gl, args);
     }
 
-    pub fn score(&mut self) {
+    pub fn score(&mut self, side : Side) {
+        match side {
+            Side::LEFT => self.scoreboard[1] += 1,
+            Side::RIGHT => self.scoreboard[0] += 1,
+        }
         self.ball.reset();
     }
 
@@ -64,9 +71,12 @@ impl App {
         self.ball.update();
         (self.update_hook)(&mut self.background_color);
 
-        if !self.ball.sprite.is_x_inside_of_play_area() {
-            self.score();
-            return;
+        match self.ball.sprite.is_x_inside_of_play_area() {
+            HorizontalSpritePosition::Inside => {}
+            HorizontalSpritePosition::Outside(side) => {
+                self.score(side);
+                return;
+            }
         }
 
         if self.ball.sprite.is_colliding_with(&self.left_pad.sprite)
@@ -125,5 +135,9 @@ impl App {
             },
             _ => {}
         }
+    }
+
+    pub fn get_title(&self) -> String {
+        format!("ROTAPONG! Score: L {} : {} R", self.scoreboard[0], self.scoreboard[1])
     }
 }

@@ -7,11 +7,11 @@ use opengl_graphics::GlGraphics;
 use piston::input::RenderArgs;
 use rand::thread_rng;
 use rand::Rng;
-use sprite::{make_sprite, Sprite};
+use sprite::Sprite;
 use game_object::GameObject;
 
 fn make_default_ball_sprite(x_speed: f64, y_speed: f64) -> Sprite {
-    make_sprite(
+    Sprite::new(
         Point {
             x: WIDTH / 2.,
             y: HEIGHT / 2.,
