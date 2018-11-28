@@ -1,8 +1,9 @@
-use commons::{Point, HEIGHT, WIDTH, Side};
+use commons::{Point, Side, HEIGHT, WIDTH};
+use coordinate_transformation::{transform_x, transform_y};
 
 pub enum HorizontalSpritePosition {
     Inside,
-    Outside(Side)
+    Outside(Side),
 }
 
 pub struct Sprite {
@@ -15,26 +16,21 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(
-        center: Point,
-        width: f64,
-        height: f64,
-        speed: f64,
-        velocity: [f64; 2]) -> Sprite {
-            Sprite {
-        upper_left: Point {
-            x: center.x - width / 2.0,
-            y: center.y - height / 2.0,
-        },
-        lower_right: Point {
-            x: center.x + width / 2.0,
-            y: center.y + height / 2.0,
-        },
-        width: width,
-        height: height,
-        velocity: velocity,
-        speed: speed,
-    }
+    pub fn new(center: Point, width: f64, height: f64, speed: f64, velocity: [f64; 2]) -> Sprite {
+        Sprite {
+            upper_left: Point {
+                x: transform_x(center.x - width / 2.0),
+                y: transform_y(center.y - height / 2.0),
+            },
+            lower_right: Point {
+                x: transform_x(center.x + width / 2.0),
+                y: transform_y(center.y + height / 2.0),
+            },
+            width: width,
+            height: height,
+            velocity: velocity,
+            speed: speed,
+        }
     }
     pub fn up(&mut self) {
         self.velocity = [0., -self.speed]
@@ -50,23 +46,23 @@ impl Sprite {
         self.upper_left.x += self.velocity[0];
         self.lower_right.x += self.velocity[0];
 
-        if self.upper_left.x < 0. {
-            self.upper_left.x = 0.;
-            self.lower_right.x = self.width;
-        } else if self.lower_right.x > WIDTH {
-            self.upper_left.x = WIDTH - self.width;
-            self.lower_right.x = WIDTH;
+        if self.upper_left.x < transform_x(0.) {
+            self.upper_left.x = transform_x(0.);
+            self.lower_right.x = transform_x(self.width);
+        } else if self.lower_right.x > transform_x(WIDTH.into()) {
+            self.upper_left.x = transform_x(WIDTH as f64 - self.width);
+            self.lower_right.x = transform_x(WIDTH.into());
         }
 
         self.upper_left.y += self.velocity[1];
         self.lower_right.y += self.velocity[1];
 
-        if self.upper_left.y < 0. {
-            self.upper_left.y = 0.;
-            self.lower_right.y = self.height;
-        } else if self.lower_right.y > HEIGHT {
-            self.upper_left.y = HEIGHT - self.height;
-            self.lower_right.y = HEIGHT;
+        if self.upper_left.y < transform_y(0.) {
+            self.upper_left.y = transform_y(0.);
+            self.lower_right.y = transform_y(self.height);
+        } else if self.lower_right.y > transform_y(HEIGHT.into()) {
+            self.upper_left.y = transform_y(HEIGHT as f64 - self.height);
+            self.lower_right.y = transform_y(HEIGHT.into());
         }
     }
 
@@ -113,13 +109,17 @@ impl Sprite {
     }
 
     pub fn is_x_inside_of_play_area(&self) -> HorizontalSpritePosition {
-        if self.upper_left.x <= 0. { return HorizontalSpritePosition::Outside(Side::LEFT); }
-        else if self.lower_right.x >= WIDTH { return HorizontalSpritePosition::Outside(Side::RIGHT); }
-        else { HorizontalSpritePosition::Inside }
+        if self.upper_left.x <= transform_x(0.) {
+            return HorizontalSpritePosition::Outside(Side::LEFT);
+        } else if self.lower_right.x >= transform_x(WIDTH.into()) {
+            return HorizontalSpritePosition::Outside(Side::RIGHT);
+        } else {
+            HorizontalSpritePosition::Inside
+        }
     }
 
     pub fn is_y_inside_of_play_area(&self) -> bool {
-        (self.upper_left.y > 0. && self.lower_right.y < HEIGHT)
+        (self.upper_left.y > transform_y(0.) && self.lower_right.y < transform_y(HEIGHT.into()))
     }
 }
 
@@ -177,8 +177,11 @@ mod tests {
     #[test]
     fn get_center_and_get_center_tuple() {
         let sprite = Sprite::new(Point { x: 1.0, y: 2.0 }, 4.0, 2.0, 3.0, [0., 0.]);
-        assert_eq!(sprite.get_center().x, 1.0);
-        assert_eq!(sprite.get_center().y, 2.0);
-        assert_eq!(sprite.get_center_tuple(), (1.0, 2.0));
+        assert_eq!(sprite.get_center().x, transform_x(1.0));
+        assert_eq!(sprite.get_center().y, transform_y(2.0));
+        assert_eq!(
+            sprite.get_center_tuple(),
+            (transform_x(1.0), transform_y(2.0))
+        );
     }
 }

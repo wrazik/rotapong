@@ -1,10 +1,10 @@
-use color::*;
 use ball::Ball;
+use color::*;
+use commons::*;
+use game_object::GameObject;
 use opengl_graphics::GlGraphics;
 use pad::Pad;
 use piston::input::{Button, Key, RenderArgs, UpdateArgs};
-use commons::*;
-use game_object::GameObject;
 use sprite::HorizontalSpritePosition;
 
 pub struct App {
@@ -14,23 +14,32 @@ pub struct App {
     ball: Ball,
     background_color: Color,
     update_hook: Box<fn(&mut Color)>,
-    scoreboard: [u32; 2]
+    scoreboard: [u32; 2],
 }
 
-fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)>{
-    if is_colorful {    
+fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)> {
+    if is_colorful {
         Box::new(|color| {
             color.increment_hue();
         })
-    }
-    else {
+    } else {
         Box::new(|_| {})
     }
 }
 
 impl App {
-    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64, is_colorful: bool, it_gets_faster: bool) -> App {
-        let velocity = if it_gets_faster {[[-2.0, 2.0], [1., -1.]]} else {[[-1.0, 1.0], [1.0, -1.1]]};
+    pub fn new(
+        gl: GlGraphics,
+        x_speed: f64,
+        y_speed: f64,
+        is_colorful: bool,
+        it_gets_faster: bool,
+    ) -> App {
+        let velocity = if it_gets_faster {
+            [[-2.0, 2.0], [1., -1.]]
+        } else {
+            [[-1.0, 1.0], [1.0, -1.1]]
+        };
         App {
             gl: gl,
             left_pad: Pad::new(Side::LEFT, make_update_hook(is_colorful)),
@@ -38,7 +47,7 @@ impl App {
             ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
             background_color: Color::new(DefinedColors::CYAN),
             update_hook: make_update_hook(is_colorful),
-            scoreboard: [0, 0]
+            scoreboard: [0, 0],
         }
     }
 
@@ -57,7 +66,7 @@ impl App {
         self.ball.draw(&mut self.gl, args);
     }
 
-    pub fn score(&mut self, side : Side) {
+    pub fn score(&mut self, side: Side) {
         match side {
             Side::LEFT => self.scoreboard[1] += 1,
             Side::RIGHT => self.scoreboard[0] += 1,
@@ -138,6 +147,9 @@ impl App {
     }
 
     pub fn get_title(&self) -> String {
-        format!("ROTAPONG! Score: L {} : {} R", self.scoreboard[0], self.scoreboard[1])
+        format!(
+            "ROTAPONG! Score: L {} : {} R",
+            self.scoreboard[0], self.scoreboard[1]
+        )
     }
 }
