@@ -8,7 +8,8 @@ use piston::input::{Button, Key, RenderArgs, UpdateArgs};
 use sprite::HorizontalSpritePosition;
 
 pub struct App {
-    gl: GlGraphics, // OpenGL drawing backend.
+    gl: GlGraphics,
+    // OpenGL drawing backend.
     left_pad: Pad,
     right_pad: Pad,
     ball: Ball,
@@ -41,7 +42,7 @@ impl App {
             [[-1.0, 1.0], [1.0, -1.1]]
         };
         App {
-            gl: gl,
+            gl,
             left_pad: Pad::new(Side::LEFT, make_update_hook(is_colorful)),
             right_pad: Pad::new(Side::RIGHT, make_update_hook(is_colorful)),
             ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
@@ -74,7 +75,7 @@ impl App {
         self.ball.reset();
     }
 
-    pub fn update(&mut self, _args: &UpdateArgs) {
+    pub fn update(&mut self, _args: UpdateArgs) {
         self.left_pad.update();
         self.right_pad.update();
         self.ball.update();
@@ -99,13 +100,9 @@ impl App {
         }
     }
 
-    pub fn reset(&mut self) {
-        self.ball.reset();
-    }
-
     pub fn release(&mut self, key: &Button) {
-        match key {
-            Button::Keyboard(k) => match k {
+        if let Button::Keyboard(k) = key {
+            match k {
                 Key::W => {
                     self.left_pad.stop();
                 }
@@ -119,15 +116,14 @@ impl App {
                     self.right_pad.stop();
                 }
                 _ => {}
-            },
-            _ => {}
+            }
         }
     }
 
     pub fn key_pressed(&mut self, key: &Button) {
         // Rotate 2 radians per second.
-        match key {
-            Button::Keyboard(k) => match k {
+        if let Button::Keyboard(k) = key {
+            match k {
                 Key::W => {
                     self.left_pad.up();
                 }
@@ -141,8 +137,7 @@ impl App {
                     self.right_pad.down();
                 }
                 _ => {}
-            },
-            _ => {}
+            }
         }
     }
 

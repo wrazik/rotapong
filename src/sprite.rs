@@ -26,10 +26,10 @@ impl Sprite {
                 x: transform_x(center.x + width / 2.0),
                 y: transform_y(center.y + height / 2.0),
             },
-            width: width,
-            height: height,
-            velocity: velocity,
-            speed: speed,
+            width,
+            height,
+            velocity,
+            speed,
         }
     }
     pub fn up(&mut self) {
@@ -72,13 +72,6 @@ impl Sprite {
             y: (self.upper_left.y + self.lower_right.y) / 2.0,
         }
     }
-    pub fn get_center_tuple(&self) -> (f64, f64) {
-        (
-            (self.upper_left.x + self.lower_right.x) / 2.0,
-            (self.upper_left.y + self.lower_right.y) / 2.0,
-        )
-    }
-
     pub fn mul_velocity(&mut self, multiplier: [f64; 2]) {
         self.velocity[0] *= multiplier[0];
         self.velocity[1] *= multiplier[1];
@@ -110,16 +103,16 @@ impl Sprite {
 
     pub fn is_x_inside_of_play_area(&self) -> HorizontalSpritePosition {
         if self.upper_left.x <= transform_x(0.) {
-            return HorizontalSpritePosition::Outside(Side::LEFT);
+            HorizontalSpritePosition::Outside(Side::LEFT)
         } else if self.lower_right.x >= transform_x(WIDTH.into()) {
-            return HorizontalSpritePosition::Outside(Side::RIGHT);
+            HorizontalSpritePosition::Outside(Side::RIGHT)
         } else {
             HorizontalSpritePosition::Inside
         }
     }
 
     pub fn is_y_inside_of_play_area(&self) -> bool {
-        (self.upper_left.y > transform_y(0.) && self.lower_right.y < transform_y(HEIGHT.into()))
+        self.upper_left.y > transform_y(0.) && self.lower_right.y < transform_y(HEIGHT.into())
     }
 }
 

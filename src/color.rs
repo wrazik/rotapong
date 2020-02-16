@@ -42,6 +42,6 @@ impl Color {
 
     pub fn increment_hue(&mut self) {
         self.hue += 1;
-        self.hue = self.hue % 360;
+        self.hue %= self.hue;
     }
 }

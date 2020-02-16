@@ -78,8 +78,8 @@ impl Ball {
             sprite: make_default_ball_sprite(x_speed, y_speed),
             radius: 10.0,
             color: Color::new(DefinedColors::RED),
-            update_hook: update_hook,
-            velocity: velocity,
+            update_hook,
+            velocity,
         }
     }
 

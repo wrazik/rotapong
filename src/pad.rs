@@ -66,7 +66,7 @@ impl Pad {
             height: 60.,
             width: 20.,
             color: Color::new(DefinedColors::RED),
-            update_hook: update_hook,
+            update_hook,
         }
     }
 

@@ -89,7 +89,7 @@ fn main() {
             app.render(&r);
         }
         if let Some(u) = e.update_args() {
-            app.update(&u);
+            app.update(u);
             window.set_title(app.get_title());
         }
     }
