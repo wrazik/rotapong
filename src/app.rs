@@ -36,11 +36,8 @@ impl App {
         is_colorful: bool,
         it_gets_faster: bool,
     ) -> App {
-        let velocity = if it_gets_faster {
-            [[-2.0, 2.0], [1., -1.]]
-        } else {
-            [[-1.0, 1.0], [1.0, -1.1]]
-        };
+        let velocity = [[-1.2, 1.2], [1., -1.]];
+
         App {
             gl,
             left_pad: Pad::new(Side::LEFT),
