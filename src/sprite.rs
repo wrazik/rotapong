@@ -11,7 +11,7 @@ pub struct Sprite {
     lower_right: Point,
     width: f64,
     height: f64,
-    velocity: [f64; 2],
+    pub velocity: [f64; 2],
     speed: f64,
 }
 
@@ -40,6 +40,10 @@ impl Sprite {
     }
     pub fn stop(&mut self) {
         self.velocity = [0., 0.]
+    }
+
+    pub fn get_y_speed(&self) -> f64 {
+        self.velocity[1]
     }
 
     pub fn update(&mut self) {

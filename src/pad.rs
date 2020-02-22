@@ -20,7 +20,7 @@ fn make_default_pad_sprite(side: Side) -> Sprite {
         },
         20.,
         120.,
-        8.0,
+        3.0,
         [0., 0.],
     )
 }

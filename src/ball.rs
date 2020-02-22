@@ -79,6 +79,10 @@ impl Ball {
         }
     }
 
+    pub fn adjust_y(&mut self, pad_speed: f64) {
+        self.sprite.velocity[1] += 0.2 * pad_speed;
+    }
+
     pub fn bounce_x(&mut self) {
         self.sprite.mul_velocity(self.velocity[0]);
     }

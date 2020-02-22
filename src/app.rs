@@ -34,7 +34,6 @@ impl App {
         x_speed: f64,
         y_speed: f64,
         is_colorful: bool,
-        it_gets_faster: bool,
     ) -> App {
         let velocity = [[-1.2, 1.2], [1., -1.]];
 
@@ -86,10 +85,12 @@ impl App {
             }
         }
 
-        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite)
-            || self.ball.sprite.is_colliding_with(&self.right_pad.sprite)
-        {
+        if self.ball.sprite.is_colliding_with(&self.left_pad.sprite) {
             self.ball.bounce_x();
+            self.ball.adjust_y(self.left_pad.sprite.get_y_speed());
+        } else if self.ball.sprite.is_colliding_with(&self.right_pad.sprite) {
+            self.ball.bounce_x();
+            self.ball.adjust_y(self.right_pad.sprite.get_y_speed());
         }
 
         if !self.ball.sprite.is_y_inside_of_play_area() {

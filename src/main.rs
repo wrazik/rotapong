@@ -44,7 +44,6 @@ fn main() {
         .get_matches();
 
     let is_colorful = matches.is_present("dynamic-colors");
-    let it_gets_faster = matches.is_present("fast");
     let opengl = OpenGL::V3_2;
 
     let window_size = [
@@ -73,8 +72,7 @@ fn main() {
         GlGraphics::new(opengl),
         x_speed,
         y_speed,
-        is_colorful,
-        it_gets_faster,
+        is_colorful
     );
 
     let mut events = Events::new(EventSettings::new());
