@@ -43,8 +43,8 @@ impl App {
         };
         App {
             gl,
-            left_pad: Pad::new(Side::LEFT, make_update_hook(is_colorful)),
-            right_pad: Pad::new(Side::RIGHT, make_update_hook(is_colorful)),
+            left_pad: Pad::new(Side::LEFT),
+            right_pad: Pad::new(Side::RIGHT),
             ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
             background_color: Color::new(DefinedColors::CYAN),
             update_hook: make_update_hook(is_colorful),

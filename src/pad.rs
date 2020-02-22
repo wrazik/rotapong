@@ -30,7 +30,6 @@ pub struct Pad {
     pub height: f64,
     pub width: f64,
     color: Color,
-    update_hook: Box<fn(&mut Color)>,
 }
 
 impl GameObject for Pad {
@@ -52,7 +51,6 @@ impl GameObject for Pad {
     }
 
     fn update(&mut self) {
-        (self.update_hook)(&mut self.color);
         self.sprite.update();
     }
 
@@ -60,13 +58,12 @@ impl GameObject for Pad {
 }
 
 impl Pad {
-    pub fn new(side: Side, update_hook: Box<fn(&mut Color)>) -> Pad {
+    pub fn new(side: Side) -> Pad {
         Pad {
             sprite: make_default_pad_sprite(side),
             height: 60.,
             width: 20.,
             color: Color::new(DefinedColors::RED),
-            update_hook,
         }
     }
 
