@@ -45,7 +45,7 @@ impl App {
             gl,
             left_pad: Pad::new(Side::LEFT),
             right_pad: Pad::new(Side::RIGHT),
-            ball: Ball::new(x_speed, y_speed, velocity, make_update_hook(is_colorful)),
+            ball: Ball::new(x_speed, y_speed, velocity),
             background_color: Color::new(DefinedColors::CYAN),
             update_hook: make_update_hook(is_colorful),
             scoreboard: [0, 0],

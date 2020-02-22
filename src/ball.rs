@@ -28,7 +28,6 @@ pub struct Ball {
     pub sprite: Sprite,
     pub radius: f64,
     color: Color,
-    update_hook: Box<fn(&mut Color)>,
     velocity: [[f64; 2]; 2],
 }
 
@@ -62,7 +61,6 @@ impl GameObject for Ball {
     }
 
     fn update(&mut self) {
-        (self.update_hook)(&mut self.color);
         self.sprite.update();
     }
 }
@@ -72,13 +70,11 @@ impl Ball {
         x_speed: f64,
         y_speed: f64,
         velocity: [[f64; 2]; 2],
-        update_hook: Box<fn(&mut Color)>,
     ) -> Ball {
         Ball {
             sprite: make_default_ball_sprite(x_speed, y_speed),
             radius: 10.0,
             color: Color::new(DefinedColors::RED),
-            update_hook,
             velocity,
         }
     }
