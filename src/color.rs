@@ -39,9 +39,4 @@ impl Color {
         let m: f32 = self.lightness - chroma / 2.;
         [bottom_rgb[0] + m, bottom_rgb[1] + m, bottom_rgb[2] + m, 1.0]
     }
-
-    pub fn increment_hue(&mut self) {
-        self.hue += 1;
-        self.hue %= self.hue;
-    }
 }

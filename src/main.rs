@@ -1,4 +1,3 @@
-extern crate clap;
 extern crate glutin_window;
 extern crate graphics;
 extern crate opengl_graphics;
@@ -8,8 +7,6 @@ extern crate rand;
 use app::App;
 use piston::window::AdvancedWindow;
 
-use clap::App as ClapApp;
-use clap::Arg;
 use commons::*;
 use glutin_window::GlutinWindow as Window;
 use opengl_graphics::{GlGraphics, OpenGL};
@@ -28,22 +25,7 @@ mod pad;
 mod sprite;
 
 fn main() {
-    let matches = ClapApp::new("ROTAPONG!")
-        .arg(
-            Arg::with_name("dynamic-colors")
-                .short("d")
-                .long("dynamic")
-                .help("Make the game more fabulous"),
-        )
-        .arg(
-            Arg::with_name("fast")
-                .short("f")
-                .long("fast")
-                .help("Make the game twice as fast after each bounce"),
-        )
-        .get_matches();
 
-    let is_colorful = matches.is_present("dynamic-colors");
     let opengl = OpenGL::V3_2;
 
     let window_size = [
@@ -68,7 +50,7 @@ fn main() {
         y_speed = -y_speed;
     }
 
-    let mut app = App::new(GlGraphics::new(opengl), x_speed, y_speed, is_colorful);
+    let mut app = App::new(GlGraphics::new(opengl), x_speed, y_speed);
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {

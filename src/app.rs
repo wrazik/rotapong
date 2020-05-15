@@ -14,22 +14,11 @@ pub struct App {
     right_pad: Pad,
     ball: Ball,
     background_color: Color,
-    update_hook: Box<fn(&mut Color)>,
     scoreboard: [u32; 2],
 }
 
-fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)> {
-    if is_colorful {
-        Box::new(|color| {
-            color.increment_hue();
-        })
-    } else {
-        Box::new(|_| {})
-    }
-}
-
 impl App {
-    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64, is_colorful: bool) -> App {
+    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64) -> App {
         let velocity = [[-1.2, 1.2], [1., -1.]];
 
         App {
@@ -38,7 +27,6 @@ impl App {
             right_pad: Pad::new(Side::RIGHT),
             ball: Ball::new(x_speed, y_speed, velocity),
             background_color: Color::new(DefinedColors::CYAN),
-            update_hook: make_update_hook(is_colorful),
             scoreboard: [0, 0],
         }
     }
@@ -70,7 +58,6 @@ impl App {
         self.left_pad.update();
         self.right_pad.update();
         self.ball.update();
-        (self.update_hook)(&mut self.background_color);
 
         match self.ball.sprite.is_x_inside_of_play_area() {
             HorizontalSpritePosition::Inside => {}
