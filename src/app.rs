@@ -29,12 +29,7 @@ fn make_update_hook(is_colorful: bool) -> Box<fn(&mut Color)> {
 }
 
 impl App {
-    pub fn new(
-        gl: GlGraphics,
-        x_speed: f64,
-        y_speed: f64,
-        is_colorful: bool,
-    ) -> App {
+    pub fn new(gl: GlGraphics, x_speed: f64, y_speed: f64, is_colorful: bool) -> App {
         let velocity = [[-1.2, 1.2], [1., -1.]];
 
         App {

@@ -68,12 +68,7 @@ fn main() {
         y_speed = -y_speed;
     }
 
-    let mut app = App::new(
-        GlGraphics::new(opengl),
-        x_speed,
-        y_speed,
-        is_colorful
-    );
+    let mut app = App::new(GlGraphics::new(opengl), x_speed, y_speed, is_colorful);
 
     let mut events = Events::new(EventSettings::new());
     while let Some(e) = events.next(&mut window) {

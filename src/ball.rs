@@ -66,11 +66,7 @@ impl GameObject for Ball {
 }
 
 impl Ball {
-    pub fn new(
-        x_speed: f64,
-        y_speed: f64,
-        velocity: [[f64; 2]; 2],
-    ) -> Ball {
+    pub fn new(x_speed: f64, y_speed: f64, velocity: [[f64; 2]; 2]) -> Ball {
         Ball {
             sprite: make_default_ball_sprite(x_speed, y_speed),
             radius: 10.0,
