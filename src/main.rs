@@ -17,6 +17,7 @@ use rand::prelude::*;
 
 mod app;
 mod ball;
+mod board;
 mod color;
 mod commons;
 mod coordinate_transformation;
@@ -25,7 +26,6 @@ mod pad;
 mod sprite;
 
 fn main() {
-
     let opengl = OpenGL::V3_2;
 
     let window_size = [

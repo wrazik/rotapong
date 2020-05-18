@@ -1,4 +1,5 @@
 use ball::Ball;
+use board::Board;
 use color::*;
 use commons::*;
 use game_object::GameObject;
@@ -15,6 +16,7 @@ pub struct App {
     ball: Ball,
     background_color: Color,
     scoreboard: [u32; 2],
+    board: Board,
 }
 
 impl App {
@@ -28,6 +30,12 @@ impl App {
             ball: Ball::new(x_speed, y_speed, velocity),
             background_color: Color::new(DefinedColors::CYAN),
             scoreboard: [0, 0],
+            board: Board {
+                x: HORIZONTAL_MARGIN as f64,
+                y: VERTICAL_MARGIN as f64,
+                width: WIDTH as f64,
+                height: HEIGHT as f64,
+            },
         }
     }
 
@@ -44,6 +52,7 @@ impl App {
         self.left_pad.draw(&mut self.gl, args);
         self.right_pad.draw(&mut self.gl, args);
         self.ball.draw(&mut self.gl, args);
+        self.board.draw(&mut self.gl, args);
     }
 
     pub fn score(&mut self, side: Side) {

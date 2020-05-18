@@ -36,10 +36,8 @@ impl GameObject for Pad {
     fn draw(&self, gl: &mut GlGraphics, args: &RenderArgs) {
         use graphics::*;
 
-        let (x, y) = (0., 0.);
-
         gl.draw(args.viewport(), |c, gl| {
-            let transform = c.transform.trans(x, y);
+            let transform = c.transform.trans(0., 0.);
 
             polygon(
                 self.color.to_rgb(),
