@@ -6,7 +6,7 @@ use bevy::{
 mod stepping;
 
 const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
-const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 60.0;
+const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 10.0;
 const PADDLE_SPEED: f32 = 500.0;
 const PADDLE_PADDING: f32 = 10.0;
 
@@ -89,7 +89,6 @@ enum WallLocation {
 }
 
 impl WallLocation {
-    /// Location of the *center* of the wall, used in `transform.translation()`
     fn position(&self) -> Vec2 {
         match self {
             WallLocation::Left => Vec2::new(LEFT_WALL, 0.),
@@ -99,11 +98,10 @@ impl WallLocation {
         }
     }
 
-    /// (x, y) dimensions of the wall, used in `transform.scale()`
     fn size(&self) -> Vec2 {
         let arena_height = TOP_WALL - BOTTOM_WALL;
         let arena_width = RIGHT_WALL - LEFT_WALL;
-        // Make sure we haven't messed up our constants
+
         assert!(arena_height > 0.0);
         assert!(arena_width > 0.0);
 
@@ -119,18 +117,11 @@ impl WallLocation {
 }
 
 impl WallBundle {
-    // This "builder method" allows us to reuse logic across our wall entities,
-    // making our code easier to read and less prone to bugs when we change the logic
     fn new(location: WallLocation) -> WallBundle {
         WallBundle {
             sprite: Sprite::from_color(WALL_COLOR, Vec2::ONE),
             transform: Transform {
-                // We need to convert our Vec2 into a Vec3, by giving it a z-coordinate
-                // This is used to determine the order of our sprites
                 translation: location.position().extend(0.0),
-                // The z-scale of 2D objects must always be 1.0,
-                // or their ordering will be affected in surprising ways.
-                // See https://github.com/bevyengine/bevy/issues/4149
                 scale: location.size().extend(1.0),
                 ..default()
             },
@@ -165,7 +156,6 @@ fn setup(
         Collider,
     ));
 
-    // Ball
     commands.spawn((
         Mesh2d(meshes.add(Circle::default())),
         MeshMaterial2d(materials.add(BALL_COLOR)),
@@ -175,7 +165,6 @@ fn setup(
         Velocity(INITIAL_BALL_DIRECTION.normalize() * BALL_SPEED),
     ));
 
-    // Scoreboard
     commands
         .spawn((
             Text::new("Score: "),
@@ -201,7 +190,6 @@ fn setup(
             TextColor(SCORE_COLOR),
         ));
 
-    // Walls
     commands.spawn(WallBundle::new(WallLocation::Left));
     commands.spawn(WallBundle::new(WallLocation::Right));
     commands.spawn(WallBundle::new(WallLocation::Bottom));
@@ -226,10 +214,10 @@ fn move_paddle(
     let new_paddle_position =
         paddle_transform.translation.y + direction * PADDLE_SPEED * time.delta_secs();
 
-    //let upper_bound = TOP_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0 + PADDLE_PADDING;
-    //let lower_bound = BOTTOM_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0 - PADDLE_PADDING;
+    let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
+    let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
 
-    paddle_transform.translation.y = new_paddle_position;
+    paddle_transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
 }
 
 fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
