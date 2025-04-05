@@ -1,71 +1,326 @@
-extern crate glutin_window;
-extern crate graphics;
-extern crate opengl_graphics;
-extern crate piston;
-extern crate rand;
+use bevy::{
+    math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
+    prelude::*,
+};
 
-use app::App;
-use piston::window::AdvancedWindow;
+mod stepping;
 
-use commons::*;
-use glutin_window::GlutinWindow as Window;
-use opengl_graphics::{GlGraphics, OpenGL};
-use piston::event_loop::*;
-use piston::input::*;
-use piston::window::WindowSettings;
-use rand::prelude::*;
+const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
+const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 60.0;
+const PADDLE_SPEED: f32 = 500.0;
+const PADDLE_PADDING: f32 = 10.0;
 
-mod app;
-mod ball;
-mod board;
-mod color;
-mod commons;
-mod coordinate_transformation;
-mod game_object;
-mod pad;
-mod sprite;
+const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
+const BALL_DIAMETER: f32 = 30.;
+const BALL_SPEED: f32 = 400.0;
+const INITIAL_BALL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
+
+const WALL_THICKNESS: f32 = 10.0;
+const LEFT_WALL: f32 = -450.;
+const RIGHT_WALL: f32 = 450.;
+// y coordinates
+const BOTTOM_WALL: f32 = -300.;
+const TOP_WALL: f32 = 300.;
+
+
+const SCOREBOARD_FONT_SIZE: f32 = 33.0;
+const SCOREBOARD_TEXT_PADDING: Val = Val::Px(5.0);
+
+const BACKGROUND_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
+const PADDLE_COLOR: Color = Color::srgb(0.3, 0.3, 0.7);
+const BALL_COLOR: Color = Color::srgb(1.0, 0.5, 0.5);
+const WALL_COLOR: Color = Color::srgb(0.8, 0.8, 0.8);
+const TEXT_COLOR: Color = Color::srgb(0.5, 0.5, 1.0);
+const SCORE_COLOR: Color = Color::srgb(1.0, 0.5, 0.5);
 
 fn main() {
-    let opengl = OpenGL::V3_2;
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(
+            stepping::SteppingPlugin::default()
+                .add_schedule(Update)
+                .add_schedule(FixedUpdate)
+                .at(Val::Percent(35.0), Val::Percent(50.0)),
+        )
+        .insert_resource(Score(0))
+        .insert_resource(ClearColor(BACKGROUND_COLOR))
+        .add_event::<CollisionEvent>()
+        .add_systems(Startup, setup)
+        .add_systems(
+            FixedUpdate,
+            (
+                apply_velocity,
+                move_paddle,
+                check_for_collisions,
+            )
+                .chain(),
+        )
+        .add_systems(Update, update_scoreboard)
+        .run();
+}
 
-    let window_size = [
-        WIDTH + (2 * HORIZONTAL_MARGIN),
-        HEIGHT + (2 * VERTICAL_MARGIN),
-    ];
+#[derive(Component)]
+struct Paddle;
 
-    // Create an Glutin window.
-    let mut window: Window = WindowSettings::new("rota-pong", window_size)
-        .opengl(opengl)
-        .exit_on_esc(true)
-        .build()
-        .unwrap();
+#[derive(Component)]
+struct Ball;
 
-    let mut rng = thread_rng();
-    let mut x_speed: f64 = rng.gen_range(0.5, 1.5);
-    if rng.gen_range(0, 10) > 5 {
-        x_speed = -x_speed;
+#[derive(Component, Deref, DerefMut)]
+struct Velocity(Vec2);
+
+#[derive(Component)]
+struct Collider;
+
+#[derive(Event, Default)]
+struct CollisionEvent;
+
+#[derive(Bundle)]
+struct WallBundle {
+    sprite: Sprite,
+    transform: Transform,
+    collider: Collider,
+}
+
+enum WallLocation {
+    Left,
+    Right,
+    Bottom,
+    Top,
+}
+
+impl WallLocation {
+    /// Location of the *center* of the wall, used in `transform.translation()`
+    fn position(&self) -> Vec2 {
+        match self {
+            WallLocation::Left => Vec2::new(LEFT_WALL, 0.),
+            WallLocation::Right => Vec2::new(RIGHT_WALL, 0.),
+            WallLocation::Bottom => Vec2::new(0., BOTTOM_WALL),
+            WallLocation::Top => Vec2::new(0., TOP_WALL),
+        }
     }
-    let mut y_speed: f64 = rng.gen_range(0.5, 1.);
-    if rng.gen_range(0, 10) > 5 {
-        y_speed = -y_speed;
-    }
 
-    let mut app = App::new(GlGraphics::new(opengl), x_speed, y_speed);
+    /// (x, y) dimensions of the wall, used in `transform.scale()`
+    fn size(&self) -> Vec2 {
+        let arena_height = TOP_WALL - BOTTOM_WALL;
+        let arena_width = RIGHT_WALL - LEFT_WALL;
+        // Make sure we haven't messed up our constants
+        assert!(arena_height > 0.0);
+        assert!(arena_width > 0.0);
 
-    let mut events = Events::new(EventSettings::new());
-    while let Some(e) = events.next(&mut window) {
-        if let Some(k) = e.press_args() {
-            app.key_pressed(&k);
-        }
-        if let Some(rel_args) = e.release_args() {
-            app.release(&rel_args);
-        }
-        if let Some(r) = e.render_args() {
-            app.render(&r);
-        }
-        if let Some(u) = e.update_args() {
-            app.update(u);
-            window.set_title(app.get_title());
+        match self {
+            WallLocation::Left | WallLocation::Right => {
+                Vec2::new(WALL_THICKNESS, arena_height + WALL_THICKNESS)
+            }
+            WallLocation::Bottom | WallLocation::Top => {
+                Vec2::new(arena_width + WALL_THICKNESS, WALL_THICKNESS)
+            }
         }
     }
+}
+
+impl WallBundle {
+    // This "builder method" allows us to reuse logic across our wall entities,
+    // making our code easier to read and less prone to bugs when we change the logic
+    fn new(location: WallLocation) -> WallBundle {
+        WallBundle {
+            sprite: Sprite::from_color(WALL_COLOR, Vec2::ONE),
+            transform: Transform {
+                // We need to convert our Vec2 into a Vec3, by giving it a z-coordinate
+                // This is used to determine the order of our sprites
+                translation: location.position().extend(0.0),
+                // The z-scale of 2D objects must always be 1.0,
+                // or their ordering will be affected in surprising ways.
+                // See https://github.com/bevyengine/bevy/issues/4149
+                scale: location.size().extend(1.0),
+                ..default()
+            },
+            collider: Collider,
+        }
+    }
+}
+
+#[derive(Resource, Deref, DerefMut)]
+struct Score(usize);
+
+#[derive(Component)]
+struct ScoreboardUi;
+
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    commands.spawn(Camera2d);
+
+    let paddle_x = LEFT_WALL + PADDLE_SIZE.x / 2.0 + GAP_BETWEEN_PADDLE_AND_BORDER;
+
+    commands.spawn((
+        Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
+        Transform {
+            translation: Vec3::new(paddle_x, 0.0, 0.0),
+            scale: PADDLE_SIZE.extend(1.0),
+            ..default()
+        },
+        Paddle,
+        Collider,
+    ));
+
+    // Ball
+    commands.spawn((
+        Mesh2d(meshes.add(Circle::default())),
+        MeshMaterial2d(materials.add(BALL_COLOR)),
+        Transform::from_translation(BALL_STARTING_POSITION)
+            .with_scale(Vec2::splat(BALL_DIAMETER).extend(1.)),
+        Ball,
+        Velocity(INITIAL_BALL_DIRECTION.normalize() * BALL_SPEED),
+    ));
+
+    // Scoreboard
+    commands
+        .spawn((
+            Text::new("Score: "),
+            TextFont {
+                font_size: SCOREBOARD_FONT_SIZE,
+                ..default()
+            },
+            TextColor(TEXT_COLOR),
+            ScoreboardUi,
+            Node {
+                position_type: PositionType::Absolute,
+                top: SCOREBOARD_TEXT_PADDING,
+                left: SCOREBOARD_TEXT_PADDING,
+                ..default()
+            },
+        ))
+        .with_child((
+            TextSpan::default(),
+            TextFont {
+                font_size: SCOREBOARD_FONT_SIZE,
+                ..default()
+            },
+            TextColor(SCORE_COLOR),
+        ));
+
+    // Walls
+    commands.spawn(WallBundle::new(WallLocation::Left));
+    commands.spawn(WallBundle::new(WallLocation::Right));
+    commands.spawn(WallBundle::new(WallLocation::Bottom));
+    commands.spawn(WallBundle::new(WallLocation::Top));
+}
+
+fn move_paddle(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut paddle_transform: Single<&mut Transform, With<Paddle>>,
+    time: Res<Time>,
+) {
+    let mut direction = 0.0;
+
+    if keyboard_input.pressed(KeyCode::KeyW) {
+        direction += 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::KeyS) {
+        direction -= 1.0;
+    }
+
+    let new_paddle_position =
+        paddle_transform.translation.y + direction * PADDLE_SPEED * time.delta_secs();
+
+    //let upper_bound = TOP_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0 + PADDLE_PADDING;
+    //let lower_bound = BOTTOM_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0 - PADDLE_PADDING;
+
+    paddle_transform.translation.y = new_paddle_position;
+}
+
+fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+    for (mut transform, velocity) in &mut query {
+        transform.translation.x += velocity.x * time.delta_secs();
+        transform.translation.y += velocity.y * time.delta_secs();
+    }
+}
+
+fn update_scoreboard(
+    score: Res<Score>,
+    score_root: Single<Entity, (With<ScoreboardUi>, With<Text>)>,
+    mut writer: TextUiWriter,
+) {
+    *writer.text(*score_root, 1) = score.to_string();
+}
+
+fn check_for_collisions(
+    mut commands: Commands,
+    mut score: ResMut<Score>,
+    ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
+    collider_query: Query<(Entity, &Transform), With<Collider>>,
+    mut collision_events: EventWriter<CollisionEvent>,
+) {
+    let (mut ball_velocity, ball_transform) = ball_query.into_inner();
+
+    for (collider_entity, collider_transform) in &collider_query {
+        let collision = ball_collision(
+            BoundingCircle::new(ball_transform.translation.truncate(), BALL_DIAMETER / 2.),
+            Aabb2d::new(
+                collider_transform.translation.truncate(),
+                collider_transform.scale.truncate() / 2.,
+            ),
+        );
+
+        if let Some(collision) = collision {
+            // Sends a collision event so that other systems can react to the collision
+            collision_events.send_default();
+
+            // Reflect the ball's velocity when it collides
+            let mut reflect_x = false;
+            let mut reflect_y = false;
+
+            // Reflect only if the velocity is in the opposite direction of the collision
+            // This prevents the ball from getting stuck inside the bar
+            match collision {
+                Collision::Left => reflect_x = ball_velocity.x > 0.0,
+                Collision::Right => reflect_x = ball_velocity.x < 0.0,
+                Collision::Top => reflect_y = ball_velocity.y < 0.0,
+                Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
+            }
+
+            // Reflect velocity on the x-axis if we hit something on the x-axis
+            if reflect_x {
+                ball_velocity.x = -ball_velocity.x;
+            }
+
+            // Reflect velocity on the y-axis if we hit something on the y-axis
+            if reflect_y {
+                ball_velocity.y = -ball_velocity.y;
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+enum Collision {
+    Left,
+    Right,
+    Top,
+    Bottom,
+}
+
+fn ball_collision(ball: BoundingCircle, bounding_box: Aabb2d) -> Option<Collision> {
+    if !ball.intersects(&bounding_box) {
+        return None;
+    }
+
+    let closest = bounding_box.closest_point(ball.center());
+    let offset = ball.center() - closest;
+    let side = if offset.x.abs() > offset.y.abs() {
+        if offset.x < 0. {
+            Collision::Left
+        } else {
+            Collision::Right
+        }
+    } else if offset.y > 0. {
+        Collision::Top
+    } else {
+        Collision::Bottom
+    };
+
+    Some(side)
 }
