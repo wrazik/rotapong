@@ -2,6 +2,7 @@ use bevy::{
     math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
     prelude::*,
 };
+use bevy::input::keyboard::Key;
 
 mod stepping;
 
@@ -50,17 +51,20 @@ fn main() {
             FixedUpdate,
             (
                 apply_velocity,
-                move_paddle,
+                move_left_paddle,
+                move_right_paddle,
                 check_for_collisions,
-            )
-                .chain(),
+            ).chain(),
         )
         .add_systems(Update, update_scoreboard)
         .run();
 }
 
 #[derive(Component)]
-struct Paddle;
+struct FirstPaddle;
+
+#[derive(Component)]
+struct SecondPaddle;
 
 #[derive(Component)]
 struct Ball;
@@ -143,16 +147,29 @@ fn setup(
 ) {
     commands.spawn(Camera2d);
 
-    let paddle_x = LEFT_WALL + PADDLE_SIZE.x / 2.0 + GAP_BETWEEN_PADDLE_AND_BORDER;
+    let first_paddle_x = LEFT_WALL + PADDLE_SIZE.x / 2.0 + GAP_BETWEEN_PADDLE_AND_BORDER;
 
     commands.spawn((
         Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
         Transform {
-            translation: Vec3::new(paddle_x, 0.0, 0.0),
+            translation: Vec3::new(first_paddle_x, 0.0, 0.0),
             scale: PADDLE_SIZE.extend(1.0),
             ..default()
         },
-        Paddle,
+        FirstPaddle,
+        Collider,
+    ));
+
+    let second_paddle_x = RIGHT_WALL - PADDLE_SIZE.x / 2.0 - GAP_BETWEEN_PADDLE_AND_BORDER;
+
+    commands.spawn((
+        Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
+        Transform {
+            translation: Vec3::new(second_paddle_x, 0.0, 0.0),
+            scale: PADDLE_SIZE.extend(1.0),
+            ..default()
+        },
+        SecondPaddle,
         Collider,
     ));
 
@@ -196,9 +213,9 @@ fn setup(
     commands.spawn(WallBundle::new(WallLocation::Top));
 }
 
-fn move_paddle(
+fn move_left_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut paddle_transform: Single<&mut Transform, With<Paddle>>,
+    mut paddle: Single<&mut Transform, With<FirstPaddle>>,
     time: Res<Time>,
 ) {
     let mut direction = 0.0;
@@ -208,6 +225,30 @@ fn move_paddle(
     }
 
     if keyboard_input.pressed(KeyCode::KeyS) {
+        direction -= 1.0;
+    }
+
+    let new_paddle_position =
+        paddle.translation.y + direction * PADDLE_SPEED * time.delta_secs();
+
+    let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
+    let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
+
+    paddle.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
+}
+
+fn move_right_paddle(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut paddle_transform: Single<&mut Transform, With<SecondPaddle>>,
+    time: Res<Time>,
+) {
+    let mut direction = 0.0;
+
+    if keyboard_input.pressed(KeyCode::ArrowUp) {
+        direction += 1.0;
+    }
+
+    if keyboard_input.pressed(KeyCode::ArrowDown) {
         direction -= 1.0;
     }
 
