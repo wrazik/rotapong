@@ -3,6 +3,7 @@ use bevy::{
     prelude::*,
 };
 use bevy::input::keyboard::Key;
+use bevy::utils::tracing::field::display;
 
 mod stepping;
 
@@ -43,7 +44,7 @@ fn main() {
                 .add_schedule(FixedUpdate)
                 .at(Val::Percent(35.0), Val::Percent(50.0)),
         )
-        .insert_resource(Score(0))
+        .insert_resource(Score(0, 0))
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_event::<CollisionEvent>()
         .add_systems(Startup, setup)
@@ -134,8 +135,8 @@ impl WallBundle {
     }
 }
 
-#[derive(Resource, Deref, DerefMut)]
-struct Score(usize);
+#[derive(Resource)]
+struct Score(usize, usize);
 
 #[derive(Component)]
 struct ScoreboardUi;
@@ -193,10 +194,21 @@ fn setup(
             ScoreboardUi,
             Node {
                 position_type: PositionType::Absolute,
-                top: SCOREBOARD_TEXT_PADDING,
-                left: SCOREBOARD_TEXT_PADDING,
+                display: Display::Flex,
+                flex_direction: FlexDirection::Row,
+                justify_content: JustifyContent::Center,
+                justify_items: JustifyItems::Center,
+                justify_self: JustifySelf::Center,
                 ..default()
             },
+        ))
+        .with_child((
+            TextSpan::default(),
+            TextFont {
+                font_size: SCOREBOARD_FONT_SIZE,
+                ..default()
+            },
+            TextColor(SCORE_COLOR),
         ))
         .with_child((
             TextSpan::default(),
@@ -273,7 +285,8 @@ fn update_scoreboard(
     score_root: Single<Entity, (With<ScoreboardUi>, With<Text>)>,
     mut writer: TextUiWriter,
 ) {
-    *writer.text(*score_root, 1) = score.to_string();
+    let (player1_score, player2_score) = (score.0, score.1);
+    *writer.text(*score_root, 1) = format!("{} : {}", player1_score, player2_score);
 }
 
 fn check_for_collisions(
@@ -321,6 +334,7 @@ fn check_for_collisions(
                 ball_velocity.y = -ball_velocity.y;
             }
         }
+
     }
 }
 
