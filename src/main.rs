@@ -185,7 +185,7 @@ fn setup(
 
     commands
         .spawn((
-            Text::new("Score: "),
+            Text::new("Score "),
             TextFont {
                 font_size: SCOREBOARD_FONT_SIZE,
                 ..default()
@@ -292,15 +292,46 @@ fn update_scoreboard(
 fn check_for_collisions(
     mut commands: Commands,
     mut score: ResMut<Score>,
-    ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
-    collider_query: Query<(Entity, &Transform), With<Collider>>,
+    mut query_set: ParamSet<(
+        Single<(&mut Velocity, &mut Transform), With<Ball>>,
+        Query<(Entity, &Transform), With<Collider>>,
+    )>,
     mut collision_events: EventWriter<CollisionEvent>,
 ) {
-    let (mut ball_velocity, ball_transform) = ball_query.into_inner();
+    let (mut ball_velocity, mut ball_transform) = query_set.p0().into_inner();
+    let ball_position = ball_transform.translation.truncate();
+    let mut velocity = ball_velocity.clone();
+    let ball_bounds = BoundingCircle::new(ball_position, BALL_DIAMETER / 2.);
+    let left_wall_hit = ball_collision(
+        ball_bounds,
+        Aabb2d::new(
+            Vec2::new(LEFT_WALL, BOTTOM_WALL),
+            Vec2::new(WALL_THICKNESS, TOP_WALL - BOTTOM_WALL),
+        ),
+    );
+    let right_wall_hit = ball_collision(
+        ball_bounds,
+        Aabb2d::new(
+            Vec2::new(RIGHT_WALL, BOTTOM_WALL),
+            Vec2::new(WALL_THICKNESS, TOP_WALL - BOTTOM_WALL),
+        ),
+    );
 
-    for (collider_entity, collider_transform) in &collider_query {
+    if let Some(collision) = left_wall_hit {
+        collision_events.send_default();
+        score.1 += 1;
+        ball_transform.translation = BALL_STARTING_POSITION;
+        return;
+    } else if let Some(collision) = right_wall_hit {
+        collision_events.send_default();
+        score.0 += 1;
+        ball_transform.translation = BALL_STARTING_POSITION;
+        return;
+    }
+
+    for (collider_entity, collider_transform) in query_set.p1().iter() {
         let collision = ball_collision(
-            BoundingCircle::new(ball_transform.translation.truncate(), BALL_DIAMETER / 2.),
+            ball_bounds,
             Aabb2d::new(
                 collider_transform.translation.truncate(),
                 collider_transform.scale.truncate() / 2.,
@@ -308,34 +339,33 @@ fn check_for_collisions(
         );
 
         if let Some(collision) = collision {
-            // Sends a collision event so that other systems can react to the collision
             collision_events.send_default();
 
-            // Reflect the ball's velocity when it collides
             let mut reflect_x = false;
             let mut reflect_y = false;
 
-            // Reflect only if the velocity is in the opposite direction of the collision
-            // This prevents the ball from getting stuck inside the bar
             match collision {
-                Collision::Left => reflect_x = ball_velocity.x > 0.0,
-                Collision::Right => reflect_x = ball_velocity.x < 0.0,
-                Collision::Top => reflect_y = ball_velocity.y < 0.0,
-                Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
+                Collision::Left =>  {
+                    reflect_x = velocity.x > 0.0;
+                },
+                Collision::Right =>  {
+                    reflect_x = velocity.x < 0.0;
+                },
+                Collision::Top => reflect_y = velocity.y < 0.0,
+                Collision::Bottom => reflect_y = velocity.y > 0.0,
             }
 
-            // Reflect velocity on the x-axis if we hit something on the x-axis
             if reflect_x {
-                ball_velocity.x = -ball_velocity.x;
+                ball_velocity.x = -velocity.x;
             }
 
-            // Reflect velocity on the y-axis if we hit something on the y-axis
             if reflect_y {
-                ball_velocity.y = -ball_velocity.y;
+                ball_velocity.y = -velocity.y;
             }
         }
 
     }
+    *ball_velocity = velocity;
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
