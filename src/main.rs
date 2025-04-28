@@ -307,6 +307,21 @@ fn check_for_collisions(
             ),
         );
 
+        let wall_collision = wall_hit(BoundingCircle::new(
+            ball_transform.translation.truncate(),
+            BALL_DIAMETER / 2.,
+        ));
+
+       if let Some(wall_collision) = wall_collision {
+            // If the ball hits a wall, reset its position and update the score
+            commands.entity(collider_entity).despawn();
+            match wall_collision {
+                Collision::Left => score.1 += 1,
+                Collision::Right => score.0 += 1,
+                Collision::Top | Collision::Bottom => {}
+            }
+        }
+
         if let Some(collision) = collision {
             // Sends a collision event so that other systems can react to the collision
             collision_events.send_default();
@@ -344,6 +359,23 @@ enum Collision {
     Right,
     Top,
     Bottom,
+}
+
+fn wall_hit(ball: BoundingCircle) -> Option<Collision> {
+    let ball_position = ball.center();
+    let ball_radius = ball.radius();
+
+    if ball_position.x - ball_radius < LEFT_WALL {
+        Some(Collision::Left)
+    } else if ball_position.x + ball_radius > RIGHT_WALL {
+        Some(Collision::Right)
+    } else if ball_position.y - ball_radius < BOTTOM_WALL {
+        Some(Collision::Bottom)
+    } else if ball_position.y + ball_radius > TOP_WALL {
+        Some(Collision::Top)
+    } else {
+        None
+    }
 }
 
 fn ball_collision(ball: BoundingCircle, bounding_box: Aabb2d) -> Option<Collision> {
