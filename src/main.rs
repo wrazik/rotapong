@@ -4,6 +4,7 @@ use bevy::{
 };
 use bevy::input::keyboard::Key;
 use bevy::utils::tracing::field::display;
+use log::debug;
 
 mod stepping;
 
@@ -54,6 +55,7 @@ fn main() {
                 apply_velocity,
                 move_left_paddle,
                 move_right_paddle,
+                check_for_score,
                 check_for_collisions,
             ).chain(),
         )
@@ -289,6 +291,37 @@ fn update_scoreboard(
     *writer.text(*score_root, 1) = format!("{} : {}", player1_score, player2_score);
 }
 
+fn check_for_score(
+    mut commands: Commands,
+    mut ball_query: Query<(&mut Transform, &mut Velocity), With<Ball>>,
+    mut score: ResMut<Score>,
+) {
+    let (mut transform, mut velocity) = ball_query.single_mut();
+
+    let ball_x = transform.translation.x;
+    let ball_radius = BALL_DIAMETER / 2.0;
+
+    if ball_x - ball_radius < (LEFT_WALL + WALL_THICKNESS / 2.0) {
+        score.0 += 1;
+        reset_ball(&mut transform, &mut velocity, true);
+    } else if ball_x + ball_radius > (RIGHT_WALL - WALL_THICKNESS / 2.0) {
+        score.1 += 1;
+        reset_ball(&mut transform, &mut velocity, false);
+    }
+}
+
+fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool) {
+    transform.translation = BALL_STARTING_POSITION;
+
+    let direction = if to_left {
+        Vec2::new(-0.5, 0.5)
+    } else {
+        Vec2::new(0.5, 0.5)
+    };
+
+    velocity.0 = direction.normalize() * BALL_SPEED;
+}
+
 fn check_for_collisions(
     mut commands: Commands,
     mut score: ResMut<Score>,
@@ -306,21 +339,6 @@ fn check_for_collisions(
                 collider_transform.scale.truncate() / 2.,
             ),
         );
-
-        let wall_collision = wall_hit(BoundingCircle::new(
-            ball_transform.translation.truncate(),
-            BALL_DIAMETER / 2.,
-        ));
-
-       if let Some(wall_collision) = wall_collision {
-            // If the ball hits a wall, reset its position and update the score
-            commands.entity(collider_entity).despawn();
-            match wall_collision {
-                Collision::Left => score.1 += 1,
-                Collision::Right => score.0 += 1,
-                Collision::Top | Collision::Bottom => {}
-            }
-        }
 
         if let Some(collision) = collision {
             // Sends a collision event so that other systems can react to the collision
@@ -366,12 +384,16 @@ fn wall_hit(ball: BoundingCircle) -> Option<Collision> {
     let ball_radius = ball.radius();
 
     if ball_position.x - ball_radius < LEFT_WALL {
+        println!("Collision: Left");
         Some(Collision::Left)
     } else if ball_position.x + ball_radius > RIGHT_WALL {
+        println!("Collision: Right");
         Some(Collision::Right)
     } else if ball_position.y - ball_radius < BOTTOM_WALL {
+        println!("Collision: Bottom");
         Some(Collision::Bottom)
     } else if ball_position.y + ball_radius > TOP_WALL {
+        println!("Collision: Top");
         Some(Collision::Top)
     } else {
         None
