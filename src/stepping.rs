@@ -33,9 +33,6 @@ impl SteppingPlugin {
 impl Plugin for SteppingPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, build_stepping_hint);
-        if cfg!(not(feature = "bevy_debug_stepping")) {
-            return;
-        }
 
         // create and insert our debug schedule into the main schedule order.
         // We need an independent schedule so we have access to all other
@@ -183,11 +180,7 @@ fn build_ui(
 }
 
 fn build_stepping_hint(mut commands: Commands) {
-    let hint_text = if cfg!(feature = "bevy_debug_stepping") {
-        "Press ` to toggle stepping mode (S: step system, Space: step frame)"
-    } else {
-        "Bevy was compiled without stepping support. Run with `--features=bevy_debug_stepping` to enable stepping."
-    };
+    let hint_text = "Bevy was compiled without stepping support. Run with `--features=bevy_debug_stepping` to enable stepping.";
     info!("{}", hint_text);
     // stepping description box
     commands.spawn((

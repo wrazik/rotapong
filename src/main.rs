@@ -2,16 +2,11 @@ use bevy::{
     math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
     prelude::*,
 };
-use bevy::input::keyboard::Key;
-use bevy::utils::tracing::field::display;
-use log::debug;
-
 mod stepping;
 
 const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
 const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 10.0;
 const PADDLE_SPEED: f32 = 500.0;
-const PADDLE_PADDING: f32 = 10.0;
 
 const BALL_STARTING_POSITION: Vec3 = Vec3::new(0.0, -50.0, 1.0);
 const BALL_DIAMETER: f32 = 30.;
@@ -21,13 +16,11 @@ const INITIAL_BALL_DIRECTION: Vec2 = Vec2::new(0.5, -0.5);
 const WALL_THICKNESS: f32 = 10.0;
 const LEFT_WALL: f32 = -450.;
 const RIGHT_WALL: f32 = 450.;
-// y coordinates
 const BOTTOM_WALL: f32 = -300.;
 const TOP_WALL: f32 = 300.;
 
 
 const SCOREBOARD_FONT_SIZE: f32 = 33.0;
-const SCOREBOARD_TEXT_PADDING: Val = Val::Px(5.0);
 
 const BACKGROUND_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 const PADDLE_COLOR: Color = Color::srgb(0.3, 0.3, 0.7);
@@ -53,8 +46,7 @@ fn main() {
             FixedUpdate,
             (
                 apply_velocity,
-                move_left_paddle,
-                move_right_paddle,
+                move_paddle,
                 check_for_score,
                 check_for_collisions,
             ).chain(),
@@ -64,10 +56,13 @@ fn main() {
 }
 
 #[derive(Component)]
-struct FirstPaddle;
+struct Paddle;
 
 #[derive(Component)]
-struct SecondPaddle;
+enum Player {
+    One,
+    Two
+}
 
 #[derive(Component)]
 struct Ball;
@@ -159,7 +154,8 @@ fn setup(
             scale: PADDLE_SIZE.extend(1.0),
             ..default()
         },
-        FirstPaddle,
+        Paddle,
+        Player::One,
         Collider,
     ));
 
@@ -172,7 +168,8 @@ fn setup(
             scale: PADDLE_SIZE.extend(1.0),
             ..default()
         },
-        SecondPaddle,
+        Paddle,
+        Player::Two,
         Collider,
     ));
 
@@ -227,52 +224,42 @@ fn setup(
     commands.spawn(WallBundle::new(WallLocation::Top));
 }
 
-fn move_left_paddle(
+fn move_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut paddle: Single<&mut Transform, With<FirstPaddle>>,
+    mut query: Query<(&mut Transform, &Player), With<Paddle>>,
     time: Res<Time>,
 ) {
-    let mut direction = 0.0;
+    for (mut transform, player) in &mut query {
+        let mut direction = 0.0;
+        match player {
+            Player::One => {
+                if keyboard_input.pressed(KeyCode::KeyW) {
+                    direction += 1.0;
+                }
 
-    if keyboard_input.pressed(KeyCode::KeyW) {
-        direction += 1.0;
+                if keyboard_input.pressed(KeyCode::KeyS){
+                    direction -= 1.0;
+                }
+            }
+            Player::Two => {
+                if keyboard_input.pressed(KeyCode::ArrowUp) {
+                    direction += 1.0;
+                }
+
+                if keyboard_input.pressed(KeyCode::ArrowDown){
+                    direction -= 1.0;
+                }
+            }
+        }
+
+        let new_paddle_position =
+            transform.translation.y + direction * PADDLE_SPEED * time.delta_secs();
+
+        let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
+        let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
+
+        transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
     }
-
-    if keyboard_input.pressed(KeyCode::KeyS) {
-        direction -= 1.0;
-    }
-
-    let new_paddle_position =
-        paddle.translation.y + direction * PADDLE_SPEED * time.delta_secs();
-
-    let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
-    let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
-
-    paddle.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
-}
-
-fn move_right_paddle(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut paddle_transform: Single<&mut Transform, With<SecondPaddle>>,
-    time: Res<Time>,
-) {
-    let mut direction = 0.0;
-
-    if keyboard_input.pressed(KeyCode::ArrowUp) {
-        direction += 1.0;
-    }
-
-    if keyboard_input.pressed(KeyCode::ArrowDown) {
-        direction -= 1.0;
-    }
-
-    let new_paddle_position =
-        paddle_transform.translation.y + direction * PADDLE_SPEED * time.delta_secs();
-
-    let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
-    let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
-
-    paddle_transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
 }
 
 fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
@@ -292,7 +279,6 @@ fn update_scoreboard(
 }
 
 fn check_for_score(
-    mut commands: Commands,
     mut ball_query: Query<(&mut Transform, &mut Velocity), With<Ball>>,
     mut score: ResMut<Score>,
 ) {
@@ -323,15 +309,13 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 }
 
 fn check_for_collisions(
-    mut commands: Commands,
-    mut score: ResMut<Score>,
     ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
     collider_query: Query<(Entity, &Transform), With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
 ) {
     let (mut ball_velocity, ball_transform) = ball_query.into_inner();
 
-    for (collider_entity, collider_transform) in &collider_query {
+    for (_collider_entity, collider_transform) in &collider_query {
         let collision = ball_collision(
             BoundingCircle::new(ball_transform.translation.truncate(), BALL_DIAMETER / 2.),
             Aabb2d::new(
@@ -377,27 +361,6 @@ enum Collision {
     Right,
     Top,
     Bottom,
-}
-
-fn wall_hit(ball: BoundingCircle) -> Option<Collision> {
-    let ball_position = ball.center();
-    let ball_radius = ball.radius();
-
-    if ball_position.x - ball_radius < LEFT_WALL {
-        println!("Collision: Left");
-        Some(Collision::Left)
-    } else if ball_position.x + ball_radius > RIGHT_WALL {
-        println!("Collision: Right");
-        Some(Collision::Right)
-    } else if ball_position.y - ball_radius < BOTTOM_WALL {
-        println!("Collision: Bottom");
-        Some(Collision::Bottom)
-    } else if ball_position.y + ball_radius > TOP_WALL {
-        println!("Collision: Top");
-        Some(Collision::Top)
-    } else {
-        None
-    }
 }
 
 fn ball_collision(ball: BoundingCircle, bounding_box: Aabb2d) -> Option<Collision> {
