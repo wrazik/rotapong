@@ -1,5 +1,6 @@
 use bevy::{
     math::bounding::{Aabb2d, BoundingCircle, BoundingVolume, IntersectsVolume},
+    ecs::query::QueryFilter,
     prelude::*,
 };
 mod stepping;
@@ -46,7 +47,8 @@ fn main() {
             FixedUpdate,
             (
                 apply_velocity,
-                move_paddle,
+                move_playerone_paddle,
+                move_playertwo_paddle,
                 check_for_score,
                 check_for_collisions,
             ).chain(),
@@ -59,10 +61,10 @@ fn main() {
 struct Paddle;
 
 #[derive(Component)]
-enum Player {
-    One,
-    Two
-}
+struct PlayerOne;
+
+#[derive(Component)]
+struct PlayerTwo;
 
 #[derive(Component)]
 struct Ball;
@@ -155,7 +157,7 @@ fn setup(
             ..default()
         },
         Paddle,
-        Player::One,
+        PlayerOne,
         Collider,
     ));
 
@@ -169,7 +171,7 @@ fn setup(
             ..default()
         },
         Paddle,
-        Player::Two,
+        PlayerTwo,
         Collider,
     ));
 
@@ -224,42 +226,50 @@ fn setup(
     commands.spawn(WallBundle::new(WallLocation::Top));
 }
 
-fn move_paddle(
+fn move_paddle<F: QueryFilter>(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &Player), With<Paddle>>,
+    mut query: Query<&mut Transform, F>,
     time: Res<Time>,
+    up_key: KeyCode,
+    down_key: KeyCode,
 ) {
-    for (mut transform, player) in &mut query {
-        let mut direction = 0.0;
-        match player {
-            Player::One => {
-                if keyboard_input.pressed(KeyCode::KeyW) {
-                    direction += 1.0;
-                }
+    for mut transform in &mut query {
+        let mut direction: Option<f32> = None;
 
-                if keyboard_input.pressed(KeyCode::KeyS){
-                    direction -= 1.0;
-                }
-            }
-            Player::Two => {
-                if keyboard_input.pressed(KeyCode::ArrowUp) {
-                    direction += 1.0;
-                }
-
-                if keyboard_input.pressed(KeyCode::ArrowDown){
-                    direction -= 1.0;
-                }
-            }
+        if keyboard_input.pressed(up_key) {
+            direction = Some(1.0);
         }
 
-        let new_paddle_position =
-            transform.translation.y + direction * PADDLE_SPEED * time.delta_secs();
+        if keyboard_input.pressed(down_key) {
+            direction = Some(-1.0);
+        }
 
-        let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
-        let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
+        if let Some(d) = direction {
+            let new_paddle_position =
+                transform.translation.y + d * PADDLE_SPEED * time.delta_secs();
 
-        transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
+            let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
+            let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
+
+            transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
+        }
     }
+}
+
+fn move_playerone_paddle(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    query: Query<&mut Transform, With<PlayerOne>>,
+    time: Res<Time>,
+) {
+    move_paddle::<With<PlayerOne>>(keyboard_input, query, time, KeyCode::KeyW, KeyCode::KeyS);
+}
+
+fn move_playertwo_paddle(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    query: Query<&mut Transform, With<PlayerTwo>>,
+    time: Res<Time>,
+) {
+    move_paddle::<With<PlayerTwo>>(keyboard_input, query, time, KeyCode::ArrowUp, KeyCode::ArrowDown);
 }
 
 fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
