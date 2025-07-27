@@ -78,6 +78,9 @@ struct Collider;
 #[derive(Event, Default)]
 struct CollisionEvent;
 
+#[derive(Resource)]
+struct BounceSound(Handle<AudioSource>);
+
 #[derive(Bundle)]
 struct WallBundle {
     sprite: Sprite,
@@ -143,6 +146,7 @@ struct ScoreboardUi;
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn(Camera2d);
@@ -183,6 +187,9 @@ fn setup(
         Ball,
         Velocity(INITIAL_BALL_DIRECTION.normalize() * BALL_SPEED),
     ));
+
+    let bounce_sound = asset_server.load("sound/ball_paddle.wav");
+    commands.insert_resource(BounceSound(bounce_sound));
 
     commands
         .spawn((
@@ -322,6 +329,8 @@ fn check_for_collisions(
     ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
     collider_query: Query<(Entity, &Transform), With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
+    mut commands: Commands,
+    bounce_sound: Res<BounceSound>
 ) {
     let (mut ball_velocity, ball_transform) = ball_query.into_inner();
 
@@ -353,6 +362,10 @@ fn check_for_collisions(
 
             // Reflect velocity on the x-axis if we hit something on the x-axis
             if reflect_x {
+                commands.spawn((
+                    AudioPlayer::new(bounce_sound.0.clone()),
+                    PlaybackSettings::ONCE,
+                ));
                 ball_velocity.x = -ball_velocity.x;
             }
 
