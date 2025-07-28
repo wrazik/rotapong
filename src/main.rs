@@ -362,7 +362,6 @@ fn check_for_collisions(
                 Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
             }
 
-            // Reflect velocity on the x-axis if we hit something on the x-axis
             if reflect_x {
                 commands.spawn((
                     AudioPlayer::new(bounce_sound.0.clone()),
@@ -370,12 +369,11 @@ fn check_for_collisions(
                 ));
                 ball_velocity.x = -1.1 * ball_velocity.x;
                 if let Some(paddle_velocity) = maybe_velocity {
-                    let influence = 0.4 * paddle_velocity.y; // Tune this factor
+                    let influence = 0.4 * paddle_velocity.y;
                     ball_velocity.y += influence;
                 }
             }
 
-            // Reflect velocity on the y-axis if we hit something on the y-axis
             if reflect_y {
                 commands.spawn((
                     AudioPlayer::new(wall_sound.0.clone()),
