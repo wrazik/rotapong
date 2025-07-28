@@ -37,14 +37,15 @@ fn main() {
         .add_event::<CollisionEvent>()
         .add_systems(Startup, setup)
         .add_systems(
-            FixedUpdate,
-            (
-                apply_velocity,
+            FixedUpdate, (
                 move_playerone_paddle,
                 move_playertwo_paddle,
-                check_for_score,
-                check_for_collisions,
-            ).chain(),
+                (
+                    apply_velocity,
+                    check_for_score,
+                    check_for_collisions,
+                ).chain(),
+            )
         )
         .add_systems(Update, update_scoreboard)
         .run();
