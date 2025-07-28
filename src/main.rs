@@ -239,34 +239,32 @@ fn setup(
 
 fn move_paddle<F: QueryFilter>(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut Velocity, F>,
+    mut query: Single<&mut Velocity, F>,
     up_key: KeyCode,
     down_key: KeyCode,
 ) {
-    for mut velocity in &mut query {
-        let mut direction = 0.0;
+    let mut direction = 0.0;
 
-        if keyboard_input.pressed(up_key) {
-            direction += 1.0;
-        }
-
-        if keyboard_input.pressed(down_key) {
-            direction -= 1.0;
-        }
-        velocity.y = direction * PADDLE_SPEED;
+    if keyboard_input.pressed(up_key) {
+        direction += 1.0;
     }
+
+    if keyboard_input.pressed(down_key) {
+        direction -= 1.0;
+    }
+    query.0.y = direction * PADDLE_SPEED;
 }
 
 fn move_playerone_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    query: Query<&mut Velocity, With<PlayerOne>>,
+    query: Single<&mut Velocity, With<PlayerOne>>,
 ) {
     move_paddle::<With<PlayerOne>>(keyboard_input, query, KeyCode::KeyW, KeyCode::KeyS);
 }
 
 fn move_playertwo_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    query: Query<&mut Velocity, With<PlayerTwo>>,
+    query: Single<&mut Velocity, With<PlayerTwo>>,
 ) {
     move_paddle::<With<PlayerTwo>>(keyboard_input, query, KeyCode::ArrowUp, KeyCode::ArrowDown);
 }
@@ -329,17 +327,18 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 }
 
 fn check_for_collisions(
-    ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
-    collider_query: Query<(Entity, &Transform), With<Collider>>,
+    mut ball_query: Query<(&mut Velocity, &Transform), With<Ball>>,
+    collider_query: Query<(&Transform, Option<&Velocity>), (With<Collider>, Without<Ball>)>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut commands: Commands,
     bounce_sound: Res<BounceSound>
 ) {
-    let (mut ball_velocity, ball_transform) = ball_query.into_inner();
+    let (mut ball_velocity, ball_transform) = ball_query.single_mut();
+    let ball_position = ball_transform.translation.truncate();
 
-    for (_collider_entity, collider_transform) in &collider_query {
+    for (collider_transform, maybe_velocity) in &collider_query {
         let collision = ball_collision(
-            BoundingCircle::new(ball_transform.translation.truncate(), BALL_DIAMETER / 2.),
+            BoundingCircle::new(ball_position, BALL_DIAMETER / 2.),
             Aabb2d::new(
                 collider_transform.translation.truncate(),
                 collider_transform.scale.truncate() / 2.,
@@ -370,6 +369,10 @@ fn check_for_collisions(
                     PlaybackSettings::ONCE,
                 ));
                 ball_velocity.x = -1.1 * ball_velocity.x;
+                if let Some(paddle_velocity) = maybe_velocity {
+                    let influence = 0.4 * paddle_velocity.y; // Tune this factor
+                    ball_velocity.y += influence;
+                }
             }
 
             // Reflect velocity on the y-axis if we hit something on the y-axis
