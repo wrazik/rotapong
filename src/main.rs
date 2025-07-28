@@ -3,7 +3,6 @@ use bevy::{
     ecs::query::QueryFilter,
     prelude::*,
 };
-mod stepping;
 
 const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
 const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 10.0;
@@ -33,12 +32,6 @@ const SCORE_COLOR: Color = Color::srgb(1.0, 0.5, 0.5);
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(
-            stepping::SteppingPlugin::default()
-                .add_schedule(Update)
-                .add_schedule(FixedUpdate)
-                .at(Val::Percent(35.0), Val::Percent(50.0)),
-        )
         .insert_resource(Score(0, 0))
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_event::<CollisionEvent>()
