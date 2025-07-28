@@ -4,7 +4,6 @@ use bevy::{
     prelude::*,
 };
 use rand::prelude::*;
-use rand::random;
 
 const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
 const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 10.0;
@@ -43,7 +42,8 @@ fn main() {
                 move_playerone_paddle,
                 move_playertwo_paddle,
                 (
-                    apply_velocity,
+                    apply_ball_velocity,
+                    apply_paddle_velocity,
                     check_for_score,
                     check_for_collisions,
                 ).chain(),
@@ -76,11 +76,6 @@ struct CollisionEvent;
 
 #[derive(Resource)]
 struct BounceSound(Handle<AudioSource>);
-
-#[derive(Resource)]
-struct WallSound(Handle<AudioSource>);
-
-struct BackgroundSound(Handle<AudioSource>);
 
 #[derive(Bundle)]
 struct WallBundle {
@@ -153,12 +148,7 @@ fn setup(
     commands.spawn(Camera2d);
 
     let first_paddle_x = LEFT_WALL + PADDLE_SIZE.x / 2.0 + GAP_BETWEEN_PADDLE_AND_BORDER;
-    let background_sound = asset_server.load("sound/background.mp3");
 
-    commands.spawn((
-        AudioPlayer::new(background_sound),
-        PlaybackSettings::LOOP,
-    ));
     commands.spawn((
         Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
         Transform {
@@ -168,11 +158,17 @@ fn setup(
         },
         Paddle,
         PlayerOne,
+        Velocity(Vec2::ZERO),
         Collider,
-
     ));
 
     let second_paddle_x = RIGHT_WALL - PADDLE_SIZE.x / 2.0 - GAP_BETWEEN_PADDLE_AND_BORDER;
+    let background_sound = asset_server.load("sound/background.mp3");
+
+    commands.spawn((
+        AudioPlayer::new(background_sound),
+        PlaybackSettings::LOOP,
+    ));
 
     commands.spawn((
         Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
@@ -183,6 +179,7 @@ fn setup(
         },
         Paddle,
         PlayerTwo,
+        Velocity(Vec2::ZERO),
         Collider,
     ));
 
@@ -196,10 +193,8 @@ fn setup(
     ));
 
     let bounce_sound = asset_server.load("sound/ball_paddle.wav");
-    let wall_sound = asset_server.load("sound/ball_wall.wav");
     commands.insert_resource(BounceSound(bounce_sound));
 
-    commands.insert_resource(WallSound(wall_sound));
     commands
         .spawn((
             Text::new("Score: "),
@@ -244,54 +239,51 @@ fn setup(
 
 fn move_paddle<F: QueryFilter>(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut Transform, F>,
-    time: Res<Time>,
+    mut query: Query<&mut Velocity, F>,
     up_key: KeyCode,
     down_key: KeyCode,
 ) {
-    for mut transform in &mut query {
-        let mut direction: Option<f32> = None;
+    for mut velocity in &mut query {
+        let mut direction = 0.0;
 
         if keyboard_input.pressed(up_key) {
-            direction = Some(1.0);
+            direction += 1.0;
         }
 
         if keyboard_input.pressed(down_key) {
-            direction = Some(-1.0);
+            direction -= 1.0;
         }
-
-        if let Some(d) = direction {
-            let new_paddle_position =
-                transform.translation.y + d * PADDLE_SPEED * time.delta_secs();
-
-            let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
-            let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
-
-            transform.translation.y = new_paddle_position.clamp(lower_bound, upper_bound);
-        }
+        velocity.y = direction * PADDLE_SPEED;
     }
 }
 
 fn move_playerone_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    query: Query<&mut Transform, With<PlayerOne>>,
-    time: Res<Time>,
+    query: Query<&mut Velocity, With<PlayerOne>>,
 ) {
-    move_paddle::<With<PlayerOne>>(keyboard_input, query, time, KeyCode::KeyW, KeyCode::KeyS);
+    move_paddle::<With<PlayerOne>>(keyboard_input, query, KeyCode::KeyW, KeyCode::KeyS);
 }
 
 fn move_playertwo_paddle(
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    query: Query<&mut Transform, With<PlayerTwo>>,
-    time: Res<Time>,
+    query: Query<&mut Velocity, With<PlayerTwo>>,
 ) {
-    move_paddle::<With<PlayerTwo>>(keyboard_input, query, time, KeyCode::ArrowUp, KeyCode::ArrowDown);
+    move_paddle::<With<PlayerTwo>>(keyboard_input, query, KeyCode::ArrowUp, KeyCode::ArrowDown);
 }
 
-fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+fn apply_ball_velocity(mut query: Query<(&mut Transform, &Velocity), With<Ball>>, time: Res<Time>) {
     for (mut transform, velocity) in &mut query {
         transform.translation.x += velocity.x * time.delta_secs();
         transform.translation.y += velocity.y * time.delta_secs();
+    }
+}
+
+fn apply_paddle_velocity(mut query: Query<(&mut Transform, &Velocity), With<Paddle>>, time: Res<Time>) {
+    for (mut transform, velocity) in &mut query {
+        let new_y = transform.translation.y + velocity.y * time.delta_secs();
+        let lower_bound = BOTTOM_WALL + WALL_THICKNESS / 2.0 + PADDLE_SIZE.y / 2.0;
+        let upper_bound = TOP_WALL - WALL_THICKNESS / 2.0 - PADDLE_SIZE.y / 2.0;
+        transform.translation.y = new_y.clamp(lower_bound, upper_bound);
     }
 }
 
@@ -324,13 +316,13 @@ fn check_for_score(
 
 fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool) {
     transform.translation = BALL_STARTING_POSITION;
-    let mut rng = rand::rng();
-    let random_x: f32 = rng.gen_range(0.0..1.0);
-    let random_y: f32 = rng.gen_range(-0.5..0.5);
+
+    let rng = thread_rng().gen_range(-0.7..0.7);
+
     let direction = if to_left {
-        Vec2::new(-random_x, random_y)
+        Vec2::new(-0.5, rng)
     } else {
-        Vec2::new(random_x, random_y)
+        Vec2::new(0.5, rng)
     };
 
     velocity.0 = direction.normalize() * BALL_SPEED;
@@ -338,13 +330,10 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 
 fn check_for_collisions(
     ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
-    paddle_left_query: Single<&Velocity, (With<Paddle>, With<PlayerTwo>, Without<PlayerOne>, Without<Ball>)>,
-    paddle_right_query:  Single<&Velocity, (With<Paddle>, With<PlayerOne>, Without<PlayerTwo>, Without<Ball>)>,
     collider_query: Query<(Entity, &Transform), With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut commands: Commands,
-    bounce_sound: Res<BounceSound>,
-    wall_sound: Res<WallSound>,
+    bounce_sound: Res<BounceSound>
 ) {
     let (mut ball_velocity, ball_transform) = ball_query.into_inner();
 
@@ -374,20 +363,13 @@ fn check_for_collisions(
                 Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
             }
 
-            let velocity = if collision == Collision::Left {
-                paddle_left_query.0.y
-            } else {
-                paddle_right_query.0.y
-            };
-
             // Reflect velocity on the x-axis if we hit something on the x-axis
             if reflect_x {
                 commands.spawn((
                     AudioPlayer::new(bounce_sound.0.clone()),
                     PlaybackSettings::ONCE,
                 ));
-                ball_velocity.x = -(ball_velocity.x * 1.3);
-                ball_velocity.y += velocity;
+                ball_velocity.x = -1.1 * ball_velocity.x;
             }
 
             // Reflect velocity on the y-axis if we hit something on the y-axis
@@ -396,7 +378,7 @@ fn check_for_collisions(
                     AudioPlayer::new(wall_sound.0.clone()),
                     PlaybackSettings::ONCE,
                 ));
-                ball_velocity.y = -(ball_velocity.y * 1.3);
+                ball_velocity.y = -(ball_velocity.y * 1.1);
             }
         }
 
