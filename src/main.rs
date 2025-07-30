@@ -327,16 +327,18 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 }
 
 fn check_for_collisions(
-    mut ball_query: Query<(&mut Velocity, &Transform), With<Ball>>,
-    collider_query: Query<(&Transform, Option<&Velocity>), (With<Collider>, Without<Ball>)>,
+    ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
+    left_paddle: Single<&Velocity, (With<Paddle>, With<PlayerTwo>, Without<PlayerOne>, Without<Ball>)>,
+    right_paddle: Single<&Velocity, (With<Paddle>, With<PlayerOne>, Without<PlayerTwo>, Without<Ball>)>,
+    collider_query: Query<&Transform, With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut commands: Commands,
     bounce_sound: Res<BounceSound>
 ) {
-    let (mut ball_velocity, ball_transform) = ball_query.single_mut();
+    let (mut ball_velocity, ball_transform) = ball_query.into_inner();
     let ball_position = ball_transform.translation.truncate();
 
-    for (collider_transform, maybe_velocity) in &collider_query {
+    for collider_transform in &collider_query {
         let collision = ball_collision(
             BoundingCircle::new(ball_position, BALL_DIAMETER / 2.),
             Aabb2d::new(
@@ -368,9 +370,11 @@ fn check_for_collisions(
                     PlaybackSettings::ONCE,
                 ));
                 ball_velocity.x = -1.1 * ball_velocity.x;
-                if let Some(paddle_velocity) = maybe_velocity {
-                    let influence = 0.4 * paddle_velocity.y;
-                    ball_velocity.y += influence;
+                if collision == Collision::Left {
+                    ball_velocity.y += (left_paddle.0.y * 0.8);
+                }
+                if collision == Collision::Right {
+                    ball_velocity.y += (right_paddle.0.y * 0.8);
                 }
             }
 
@@ -382,7 +386,6 @@ fn check_for_collisions(
                 ball_velocity.y = -(ball_velocity.y * 1.1);
             }
         }
-
     }
 }
 
