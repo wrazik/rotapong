@@ -328,8 +328,8 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 
 fn check_for_collisions(
     ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
-    left_paddle: Single<&Velocity, (With<Paddle>, With<PlayerTwo>, Without<PlayerOne>, Without<Ball>)>,
-    right_paddle: Single<&Velocity, (With<Paddle>, With<PlayerOne>, Without<PlayerTwo>, Without<Ball>)>,
+    left_paddle: Single<&Velocity, (With<Paddle>, With<PlayerTwo>, Without<Ball>)>,
+    right_paddle: Single<&Velocity, (With<Paddle>, With<PlayerOne>, Without<Ball>)>,
     collider_query: Query<&Transform, With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut commands: Commands,
@@ -371,10 +371,10 @@ fn check_for_collisions(
                 ));
                 ball_velocity.x = -1.1 * ball_velocity.x;
                 if collision == Collision::Left {
-                    ball_velocity.y += (left_paddle.0.y * 0.8);
+                    ball_velocity.y += left_paddle.0.y * 0.8;
                 }
                 if collision == Collision::Right {
-                    ball_velocity.y += (right_paddle.0.y * 0.8);
+                    ball_velocity.y += right_paddle.0.y * 0.8;
                 }
             }
 
