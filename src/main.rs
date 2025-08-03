@@ -3,6 +3,8 @@ use bevy::{
     ecs::query::QueryFilter,
     prelude::*,
 };
+use rand::prelude::*;
+use rand::random;
 
 const PADDLE_SIZE: Vec2 = Vec2::new(20.0, 120.0);
 const GAP_BETWEEN_PADDLE_AND_BORDER: f32 = 10.0;
@@ -75,6 +77,11 @@ struct CollisionEvent;
 #[derive(Resource)]
 struct BounceSound(Handle<AudioSource>);
 
+#[derive(Resource)]
+struct WallSound(Handle<AudioSource>);
+
+struct BackgroundSound(Handle<AudioSource>);
+
 #[derive(Bundle)]
 struct WallBundle {
     sprite: Sprite,
@@ -146,7 +153,12 @@ fn setup(
     commands.spawn(Camera2d);
 
     let first_paddle_x = LEFT_WALL + PADDLE_SIZE.x / 2.0 + GAP_BETWEEN_PADDLE_AND_BORDER;
+    let background_sound = asset_server.load("sound/background.mp3");
 
+    commands.spawn((
+        AudioPlayer::new(background_sound),
+        PlaybackSettings::LOOP,
+    ));
     commands.spawn((
         Sprite::from_color(PADDLE_COLOR, Vec2::ONE),
         Transform {
@@ -157,6 +169,7 @@ fn setup(
         Paddle,
         PlayerOne,
         Collider,
+
     ));
 
     let second_paddle_x = RIGHT_WALL - PADDLE_SIZE.x / 2.0 - GAP_BETWEEN_PADDLE_AND_BORDER;
@@ -183,8 +196,10 @@ fn setup(
     ));
 
     let bounce_sound = asset_server.load("sound/ball_paddle.wav");
+    let wall_sound = asset_server.load("sound/ball_wall.wav");
     commands.insert_resource(BounceSound(bounce_sound));
 
+    commands.insert_resource(WallSound(wall_sound));
     commands
         .spawn((
             Text::new("Score: "),
@@ -285,7 +300,7 @@ fn update_scoreboard(
     score_root: Single<Entity, (With<ScoreboardUi>, With<Text>)>,
     mut writer: TextUiWriter,
 ) {
-    let (player1_score, player2_score) = (score.0, score.1);
+    let (player1_score, player2_score) = (score.1, score.0);
     *writer.text(*score_root, 1) = format!("{} : {}", player1_score, player2_score);
 }
 
@@ -309,11 +324,13 @@ fn check_for_score(
 
 fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool) {
     transform.translation = BALL_STARTING_POSITION;
-
+    let mut rng = rand::rng();
+    let random_x: f32 = rng.gen_range(0.0..1.0);
+    let random_y: f32 = rng.gen_range(-0.5..0.5);
     let direction = if to_left {
-        Vec2::new(-0.5, 0.5)
+        Vec2::new(-random_x, random_y)
     } else {
-        Vec2::new(0.5, 0.5)
+        Vec2::new(random_x, random_y)
     };
 
     velocity.0 = direction.normalize() * BALL_SPEED;
@@ -321,10 +338,13 @@ fn reset_ball(transform: &mut Transform, velocity: &mut Velocity, to_left: bool)
 
 fn check_for_collisions(
     ball_query: Single<(&mut Velocity, &Transform), With<Ball>>,
+    paddle_left_query: Single<&Velocity, (With<Paddle>, With<PlayerTwo>, Without<PlayerOne>, Without<Ball>)>,
+    paddle_right_query:  Single<&Velocity, (With<Paddle>, With<PlayerOne>, Without<PlayerTwo>, Without<Ball>)>,
     collider_query: Query<(Entity, &Transform), With<Collider>>,
     mut collision_events: EventWriter<CollisionEvent>,
     mut commands: Commands,
-    bounce_sound: Res<BounceSound>
+    bounce_sound: Res<BounceSound>,
+    wall_sound: Res<WallSound>,
 ) {
     let (mut ball_velocity, ball_transform) = ball_query.into_inner();
 
@@ -354,18 +374,29 @@ fn check_for_collisions(
                 Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
             }
 
+            let velocity = if collision == Collision::Left {
+                paddle_left_query.0.y
+            } else {
+                paddle_right_query.0.y
+            };
+
             // Reflect velocity on the x-axis if we hit something on the x-axis
             if reflect_x {
                 commands.spawn((
                     AudioPlayer::new(bounce_sound.0.clone()),
                     PlaybackSettings::ONCE,
                 ));
-                ball_velocity.x = -ball_velocity.x;
+                ball_velocity.x = -(ball_velocity.x * 1.3);
+                ball_velocity.y += velocity;
             }
 
             // Reflect velocity on the y-axis if we hit something on the y-axis
             if reflect_y {
-                ball_velocity.y = -ball_velocity.y;
+                commands.spawn((
+                    AudioPlayer::new(wall_sound.0.clone()),
+                    PlaybackSettings::ONCE,
+                ));
+                ball_velocity.y = -(ball_velocity.y * 1.3);
             }
         }
 
